@@ -1,0 +1,7 @@
+useDynLib(catdap)
+import(graphics)
+importFrom(grDevices, dev.new, gray)
+export(catdap1, catdap1c, catdap2, Barplot2WayTable)
+
+S3method(print, catdap1)
+S3method(print, catdap2)

@@ -1,0 +1,721 @@
+      SUBROUTINE CATDAP1F(NSAMP,N,L,RECODE,N1,ISKIP1,N4,ITEM1,ITEM2,
+     1                      ICONV,FACE,FACE2,ISKIP,IDATA,ITEM,IA,P,
+     2                      TOTALR,AIMIN,ORD)
+C
+      INCLUDE 'catdap_f.h'
+C
+cc      PROGRAM CATDAP
+C     CATEGORICAL DATA ANALYSIS PROGRAM PACKAGE 01  PART 1
+C                                        (CATDAP 01 PART 1)
+C                                           (LAST VERSION) APR.22,1982
+C                               DESIGNED BY Y.SAKAMOTO
+C                               PROGRAMMED BY K.KATSURA AND Y.SAKAMOTO
+C                              THE INSTITUTE OF STATISTICAL MATHEMATICS
+C
+C      THIS IS A BASIC PROGRAM FOR THE SEARCH FOR THE BEST SINGLE
+C      PREDICTOR (EXPLANATORY VARIABLE) ON WHICH A SPECIFIC VARIABLE
+C      (RESPONSE VARIABLE) HAS THE STRONGEST DEPENDENCE.
+C      FOR FURTHER DETAILS, SEE (1),(2),(3).  THIS PROGRAM CAN
+C      SIMULTANEOUSLY HANDLE MANY VARIABLES AS RESPONSE VARIABLES.
+C      UNLIKE CATDAP-02, CATDAP-01 DOES NOT PERFORM AN AUTOMATIC
+C      POOLING OF CATEGORIES OF EACH VARIABLE.   THE OUTPUTS OF 'PART
+C      1' ARE AS FOLLOWS:
+C      ----------------------------------------------------------------
+C
+C       <PART 1>
+C        1) LIST OF EXPLANATORY VARIABLES ARRANGED IN ORDER OF THE
+C           STRENGTH OF DEPENDENCE OF A RESPONSE VARIABLE; EXPLANATORY
+C           VARIABLE, NUMBER OF CATEGORIES OF EACH EXPLANATORY VARIABLE
+C           , VALUE OF AIC, DIFFERENCE OF AIC
+C        2) THE CORRESPONDING TWO-WAY TABLES
+C           THE ABOVE OUTPUTS 1) AND 2) ARE PRINTED OUT EVERY RESPONSE
+C           VARIABLE.
+C        3) SUMMARY OF THE AIC'S
+C        4) GRAY SHADING DISPLAY OF ALL THE AIC'S
+C      ----------------------------------------------------------------
+C
+C      REFERENCE:
+C      (1) Y.SAKAMOTO AND H.AKAIKE(1978), "ANALYSIS OF CROSS-CLASSIFIED
+C          DATA BY AIC", ANN. INST. STATIST. MATH., 30,B,185-197.
+C      (2) K.KATSURA AND Y.SAKAMOTO (1980), "CATDAP, A CATEGORICAL
+C          DATA ANALYSIS PROGRAM PACKAGE," COMPUTER SCIENCE MONOGRAPHS,
+C          NO.14, INST. STAT. MATH.
+C      (3) Y.SAKAMOTO (1981), "KATEGORICAL DETA NI OKERU HENSU-SENTAKU,
+C          " TOKEI-SURI-KENKYUZYO-IHO,28,1, 135-155.
+C      ----------------------------------------------------------------
+C
+C      INPUTS REQUIRED:
+C
+C      EVERY INPUT SHOULD BE PUNCHED WITH FORMAT IN PARENTHESIS.
+C
+C      DATA NO. 1:    FORMAT (20I4)
+C        NSAMP:  SAMPLE SIZE
+C        N:  TOTAL NUMBER OF VARIABLES
+C        L:  TOTAL NUMBER OF RESPONSE VARIABLES. (L CANNOT EXCEED N.)
+C        RECODE:  TOTAL NUMBER OF VARIABLES CONTAINING CATEGORIES TO BE
+C                RECODED, IF ANY.
+C        ICROSS:  NUMBER OF TWO-WAY TABLES REQUESTED AS OUTPUTS.   SET
+C                 -1 IF ALL TABLES DESIRED.   REGARDED IT AS 10 UNLESS
+C                 OTHERWISE SPECIFIED.
+C        IEXP: =1  TO REGARD AS EXPLANATORY VARIABLES ONLY. THE
+C                   VARIABLES SPECIFIED BY 'FACE2(I)'
+C              =0  OTHERWISE
+C        N1: TOTAL NUMBER OF EXPLANATORY VARIABLES IN CASE 'IEXP=1'.
+C            PUT 0 IF 'IEXP=0'.
+C        JSAMP: NUMBER OF DATA TO BE SKIPPED TO REQUIRED DATA
+C        IN:  INPUT DATA DEVICE SPECIFICATION (IN=5: CARD READER)
+C        ISKIP1:  NUMBER OF VARIABLES SPECIFIED BY 'ISKIP(1,I)' TO
+C                 DELETE A PART OF DATA.   PUT IT AS 0 IF ALL THE
+C                 DATA ARE UTILIZED.
+C
+C      DATA NO. 2:    FORMAT (20I4)
+C        ITEM1(I),ITEM2(I), I=1,N:  MIN AND MAX VALUES OF CODE NUMBERS
+C                                   OF EACH VARIABLE
+C
+C      DATA N0. 3:    FORMAT (20I4)
+C        ICONV(I,J), I=1,RECODE, J=1,20:  VARIABLE NUMBER AND RECODED
+C                                        NUMBERS IN CASE 'RECODE>0'.
+C             ICONV(I,I):  VARIABLE NUMBER
+C             ICONV(I.J), J=2,20:  RECODED NUMBERS CORRESPONDING TO
+C                                  THE ORIGINAL CODES 1,2,...  ,19.
+C          BY THIS INPUT, THE ORIGINAL CODE 'J-1' IS TO BE
+C          CONVERTED INTO THE CODE 'ICONV(I,J)'.
+C
+C      DATA NO. 4:    FORMAT (20I4)
+C        FACE(I),I=l,L:  VARIABLE NUMBERS OF RESPONSE VARIABLES
+C
+C      DATA N0. 5:    FORMAT (20I4)
+C        FACE2(I),I=1,N1:  VARIABLE NUMBERS OF EXPLANATORY VARIABLES IN
+C                          CASE 'IEXP1'.   NO INPUT REQUIRED IF
+C                          'IEXP=0'.
+C
+C      DATA NO. 6:    FORMAT (20A4)
+C        FMT(I),I=1,20:  INPUT DATA FORMAT SPECIFICATION STATEMENT
+C                        ----FOR EXAMPLE----  (10I1)
+C
+C      DATA NO. 7:    FORMAT (10A1)
+C        TITLE(I,K),I=1,10, K=1,N:  VARIABLE NAMES
+C
+C      DATA NO. 8:    FORMAT (20I4)
+C        ISKIP(J,I),J=1,20, 1=1,ISKIP1:
+C             ISKIP(1,I):  VARIABLE NUMBER
+C             ISKIP(2,I):  NUMBER OF CODES
+C             ISKIP(K,I), K=3,20: CODES
+C          CATDAP-01 DISCARDS THE RECORDS IN WHICH THE VARIABLE
+C          SPECIFIED BY 'ISKIP(1,I)' HAS ONE OF THE VALUES
+C          SPECIFIED BY 'ISKIP(K,I)'  (K=3,4,...,'ISKIP(2,I)'+2).
+C
+C     NO. 9:   ORIGINAL DATA
+C
+C   ***  PART  1 ***
+C
+C
+cc      !DEC$ ATTRIBUTES DLLEXPORT :: CATDAP01F
+C
+C     DATA INPUT,RECODE AND CONSTRUCTION OF TWO-WAY TABLES
+cc      IMPLICIT REAL*8(A-H,O-Z)
+cc      INTEGER *2 IA
+cc      INTEGER ALIM,RECODE
+cc      REAL *4 FMT
+cc      DIMENSION IA(350000),A(20000),FMT(100)
+cc      IALIM=350000
+cc      ALIM=20000
+cc      READ(5,1001) NSAMP,N,L,RECODE,ICROSS,IEXP,NI,JSAMP,IN,ISKIP1
+cc      NFM=1
+cc      N22=2*N+1
+cc      N24=4*N
+cc      READ(5,1001) (IA(I),I=N22,N24)
+cc      N2=0
+cc      N4=0
+cc      DO 10 I=1,N
+cc      N23=2*I+N22-1
+cc      INN=I+N
+cc      IA(I)=IA(N23-1)
+cc      IA(INN)=IA(N23)
+cc      N2=N2+(IA(INN)-IA(I)+1)
+cc      N5=IA(INN)-IA(I)+1
+cc      N4=MAX(N4,N5)
+cc   10 CONTINUE
+cc      I1=N+1
+cc      I2=I1+N
+cc      I0=2*N
+cc      IF(RECODE.EQ.0) GO TO 15
+cc      DO 20 K=1,RECODE
+cc      I01=I0+1
+cc      I02=I0+20
+cc      READ(5,1001) (IA(I),I=I01,I02)
+cc      I0=I0+20
+cc   20 CONTINUE
+cc   15 CONTINUE
+cc      I3=I2+20*RECODE+1
+cc      I3L=I3+L-1
+cc      READ(5,1001) (IA(I),I=I3,I3L)
+cc      I4=I3+L
+cc      IF(IEXP.NE.1) GO TO 30
+cc      I4N=I4+N1-1
+cc      READ(5,1001) (IA(I),I=I4,I4N)
+cc   30 CONTINUE
+cc      I5=I4+N1
+cc      NN2=NFM*20
+cc      READ(5,1002) (FMT(I),I=1,NN2)
+cc      I0=I5-1
+cc      DO 40 K=1,N
+cc      I01=I0+1
+cc      I010=I0+10
+cc      READ(5,1003) (IA(I),I=I01,I010)
+cc      I0=I0+10
+cc   40 CONTINUE
+cc      I6=I5+10*N
+cc      I0=I6-1
+cc      IF(ISKIP1.EQ.0) GO TO 50
+cc      DO 45 K=1,ISKIP1
+cc      I01=I0+1
+cc      I02=I0+20
+cc      READ(5,1001) (IA(I),I=I01,I02)
+cc      I0=I0+20
+cc   45 CONTINUE
+cc   50 CONTINUE
+cc      I7=I6+20*ISKIP1
+cc      I8=I7+N
+cc      I9=I8+N
+cc      I10=I9+N2
+cc      I11=I10+N2
+cc      I12=I11+N
+cc      I13=I12+10*N
+cc      I14=I13+N
+cc      I15=I14+N
+cc      I16=I15+N*N
+cc      I17=I16+N
+cc      I18=I17+N
+cc      I19=I18+N
+cc      I20=I19+N2*N2
+cc      I21=I20+N
+cc      I22=121+N
+cc      IMAX=I22+N*3
+cc      J1=N+1
+cc      J2=J1+N4
+cc      J3=J2+N4*N4
+cc      J4=J3+N4
+cc      J5=J4+N
+cc      J6=J5+N
+cc      J7=J6+N
+cc      J8=J7+N*N
+cc      J9=J8+N2
+cc      JMAX=J9
+cc      NNN=IALIM-I22
+cc      N1=N1+1
+cc      ISKIP1=ISKIP1+1
+cc      RECODE=RECODE+1
+cc      IF(IMAX.GT.IALIM.OR.JMAX.GT.ALIM) GO TO 60
+cc      CALL CAT1(NSAMP,N,L,RECODE,ICROSS,IEXP,N1,JSAMP,IN,ISKIP1,FMT,N2,
+cc     1          N4,IA(1),IA(I1),IA(I2),IA(I3),IA(I4),IA(I5),IA(I6),
+cc     2          IA(I7),IA(I8),IA(I9),IA(I10),IA(I11),IA(I12),IA(I13),
+cc     3          IA(I14),IA(I15),IA(I16),IA(I17),IA(I18),IA(I19),IA(I20),
+cc     4          IA(I21),A(1),A(J1),A(J2),A(J3),A(J4),A(J5),A(J6),A(J7),
+cc     5          A(J8),IA(I22),NNN)
+cc      WRITE(6,1004) IMAX,JMAX
+cc      GO TO 70
+cc   60 WRITE(6,1005) IALIM,IMAX,ALIM,JMAX
+cc      STOP 10
+cc   70 CONTINUE
+cc 1001 FORMAT(20I4)
+cc 1002 FORMAT(20A4)
+cc 1003 FORMAT(10A1)
+cc 1004 FORMAT(1H ,5X,'USED MEMORIES'
+cc     1       //1H ,I10,2X,'WORDS (FOR ''IA '' )'/1H0,I10,2X,
+cc     2        'WORDS  (FOR ''A'' )')
+cc 1005 FORMAT(1H ,' IA OR A DIMENSION OVER ',4I10)
+cc 1006 FORMAT(8F10.4)
+cc      STOP
+cc      END
+cc      SUBROUTINE CAT1(NSAMP,N,L,RECODE,ICROSS,IEXP,N3,JSAMP,IN,ISKIP1,
+cc     1                FMT,N2,N4,ITEM1,ITEM2,ICONV,FACE,FACE2,TITLE,
+cc     2                ISKIP,ITEM,IDATA,TOTALR,TOTALC,HYO,HY,IZ,NNK,IMX,
+cc     3                IDF,IDF1,NO1,IA,INDE,MIN,AMIN,TPAR,P,PT,AIC1,AIC2,
+cc     4                AIC3,AIMIN,TCC,IW,NNN)
+      IMPLICIT REAL*8(A-H,O-Z)
+cc      INTEGER * 2 ITEM,ITEM1,ITEM2,IDATA,TOTALR,TOTALC,FACE,FACE2,IMX,
+cc     1            TITLE,ICONV,HYO,HY,INDE,IZ,NNK,IDF,IDF1,NO1,IA,MIN,
+cc     2            ISKIP,IW
+cc      INTEGER     RECODE
+cc      REAL * 4    FMT,FM1,FM2,FM3,FM4,FM5,FAA,FAC,FAD,BL
+cc      DIMENSION ITEM(N),ITEM1(N),ITEM2(N),IDATA(N,NSAMP),TOTALR(N2),HYO(N),
+cc     1          TOTALC(N2),FACE(L),FACE2(N3),TITLE(10,N),HY(10,N),IZ(N),
+cc     2          NNK(N),IMX(N,N),NO1(N),IA(N2,N2),ICONV(20,RECODE),
+cc     3          INDE(N),MIN(N),FAA(5),FAC(10),IDF(N),AIMIN(N,N),
+cc     4          FMT(100),FM1(7),FM2(11),FM3(7),FM4(11),FM5(7),IDF1(N),
+cc     5          AMIN(N),TPAR(N4),P(N4,N4),PT(N4),FAD(3),TCC(N2),
+cc     6          AIC1(N),AIC2(N),AIC3(N),ISKIP(20,ISKIP1),IW(NNN)
+      INTEGER     RECODE,FACE,FACE2,TOTALR,TOTALC,ORD
+      DIMENSION ITEM1(N),ITEM2(N),ICONV(20,RECODE),FACE(L),
+     1          FACE2(N1+1),ISKIP(20,ISKIP1),IDATA(N,NSAMP),ITEM(N),
+     2          IA(N4,N4,L,N),TOTALR(N4,N),TOTALC(N4,L),P(N4,N4,L,N),
+     3          TPAR(N4,N),PT(N4,L),AIMIN(L,N),ORD(L,N-1)
+C
+      INTEGER     IDF1,MIN
+      DIMENSION MIN(N),AMIN(N),IDF1(N),TCC(N4),AIC1(N),AIC2(N),AIC3(N)
+cc      DATA FM1/'(1H+',',60X',',12I','6,6X',4H,'TO,4HTAL',')'/,
+cc     1     FM2/', 1I',', 2I',', 3I',', 4I',', 5I',', 6I',', 7I',', 8I',
+cc     2         ', 9I',',10I',',11I'/
+cc      DATA FM3/'(1H+',',57X',',I2,','2X  ',',12F','6.1,','I5)'/,
+cc     1     FM4/', 2F',', 3F',', 4F',', 5F',', 6F',', 7F',', 8F',
+cc     2         ', 9F',',10F',',11F',',12F'/
+cc      DATA FM5/'(1H+',',56X',4H,'TO,4HTAL',',12F','6.1,','I5)'/
+cc      DATA FAA/'(1H+','    ','    ',',F10', '.2) '/
+cc      DATA FAC/',13X',',25X',',37X',',49X',',61X',',73X',',85X',
+cc     1         ',97X',',57X',',69X'/
+cc      DATA FAD/',30X',',64X',',50X'/
+cc      DATA BL/'    '/
+C
+c <<
+      IEXP=0
+      IF((N1.GT.0) .AND. (N1.LT.N)) IEXP=1
+c >>
+cc      NWW=0
+cc      N1=N3-1
+cc      RECODE=RECODE-1
+cc      ISKIP1=ISKIP1-1
+      NL=N
+      SAMP=NSAMP
+cc      IF(IN.EQ.0) IN=5
+      DO 60 I=1,N
+      ITEM(I)=ITEM2(I)-ITEM1(I)+1
+   60 CONTINUE
+C
+C     INITIAL CLEARING
+C
+cc      DO 70 J=1,N2
+cc      TOTALR(J)=0
+cc      TOTALC(J)=0
+cc      DO 70 I=1,N2
+cc   70 IA(I,J)=0
+      DO 71 I1=1,N4
+      DO 71 I=1,L
+   71 TOTALC(I1,I)=0
+   
+      DO 70 J1=1,N4
+      DO 70 J=1,N
+   70 TOTALR(J1,J)=0
+   
+      DO 80 I=1,L
+cc      DO 80 J=1,N
+      DO 80 J=1,N
+      DO 75 I1=1,N4
+      DO 75 J1=1,N4
+   75 IA(I1,J1,I,J)=0
+      AIMIN(I,J)=0.
+   80 CONTINUE
+C
+C     SKIP TO DATA REQUIRED
+C
+cc      IF(JSAMP.EQ.0) GO TO 90
+cc      DO 100 I=1,JSAMP
+cc      READ(IN,1001)
+cc  100 CONTINUE
+cc   90 CONTINUE
+C
+C     DATA INPUT, RECODE AND CONSTRUCTION OF TWO-WAY TABLES
+C
+      NNS=0
+c <<<
+      N11=N1
+c >>>
+      DO 110 K=1,NSAMP
+cc      READ(IN,FMT) (IDATA(I),I=1,N)
+      IF(ISKIP1.EQ.0) GO TO 150
+      DO 160 IS1=1,ISKIP1
+      ISKIP2=ISKIP(1,IS1)
+      ISKIP3=ISKIP(2,IS1)
+      DO 170 IS2=1,ISKIP3
+cc      IF(IDATA(ISKIP2).EQ.ISKIP(IS2+2,IS1)) GO TO 110
+      IF(IDATA(ISKIP2,K).EQ.ISKIP(IS2+2,IS1)) GO TO 110
+  170 CONTINUE
+  160 CONTINUE
+  150 NNS=NNS+1
+      IF(RECODE.EQ.0) GO TO 180
+      DO 190 I=1,N
+      DO 200 IK=1,RECODE
+      IF(ICONV(1,IK).NE.I) GO TO 200
+cc      IK1=IDATA(I)+1
+cc      IF(IDATA(I).EQ.0) IK1=11
+cc      IDATA(I)=ICONV(IK1,IK)
+      IK1=IDATA(I,K)+1
+      IF(IDATA(I,K).EQ.0) IK1=11
+      IDATA(I,K)=ICONV(IK1,IK)
+      GO TO 190
+  200 CONTINUE
+  190 CONTINUE
+  180 CONTINUE
+      DO 210 I=1,N
+cc      IF(IDATA(I).EQ.0) IDATA(I)=ITEM(I) 
+cc      IF(IDATA(I).GT.ITEM(I)) IDATA(I)=ITEM(I)
+      IF(IDATA(I,K).EQ.0) IDATA(I,K)=ITEM(I) 
+      IF(IDATA(I,K).GT.ITEM(I)) IDATA(I,K)=ITEM(I)
+  210 CONTINUE 
+cc      IF(IEXP.NE.1) N1=N
+cc      II=0
+      IF(IEXP.NE.1) N11=N
+      DO 240 I2=1,L
+      I3=FACE(I2)
+cc      I=IDATA(I3)+II
+      I=IDATA(I3,K)
+cc      JJ=0
+cc      DO 250 J3=1,N1
+      DO 250 J3=1,N11
+      J2=J3
+      IF(IEXP.EQ.1) J2=FACE2(J3)
+cc      J=IDATA(J2)+JJ
+cc      IF(I2.EQ.1)TOTALR(J)=TOTALR(J)+1
+cc      IF(J3.EQ.1)TOTALC(I)=TOTALC(I)+1
+cc      IA(I,J)=IA(I,J)+1
+cc  250 JJ=JJ+ITEM(J2)
+cc  240 II=II+ITEM(I3)
+      J=IDATA(J2,K)
+      IF(I2.EQ.1) TOTALR(J,J2)=TOTALR(J,J2)+1
+      IA(I,J,I2,J2)=IA(I,J,I2,J2)+1
+  250 CONTINUE
+      TOTALC(I,I2)=TOTALC(I,I2)+1
+c <<<
+      TOTALR(I,I3)=TOTALC(I,I2)
+c >>>
+  240 CONTINUE
+  110 CONTINUE
+      NSAMP=NNS
+      SAMP=NNS
+cc      DO 360 I=1,N
+cc      IDF(I)=ITEM2(I)-ITEM1(I)+1
+cc  360 CONTINUE
+cc      IF(IEXP.EQ.1) N=N1
+      IF(IEXP.EQ.1) N=N11
+cc      I1=1
+cc      I3=FACE(1)
+cc      I2=ITEM(I3)
+C
+      DO 370 IK=1,L
+      I1=1
+      I3=FACE(IK)
+      I2=ITEM(I3)
+cc      J1=1
+cc      J2=ITEM(1)
+cc      IF(IEXP.EQ.1) J3=FACE2(1)
+C
+C     INITIAL CLEARING
+C
+      DO 380 K=1,NL
+      IDF1(K)=0
+      MIN(K)=0
+      AIC1(K)=0.0
+      AIC3(K)=0.0
+  380 AIC2(K)=0.0
+c <<<
+      MIN(NL)=I3
+      AIC3(I3)=1.D10
+c >>>
+C
+C     COMPUTATION OF AIC'S
+C
+      K10=0
+      DO 390 K21=1,N
+      K=K21
+      IF(IEXP.EQ.1) K=FACE2(K21)
+c <<<
+      J1=1
+      J3=K21
+      IF(IEXP.EQ.1) J3=FACE2(K21)
+      J2=ITEM(J3)
+c >>>
+cc      NO1(K21)=J1
+      IF(K.EQ.I3)GO TO 400
+cc      K=K21
+      TSMP=0.
+      DO 410 J=J1,J2
+      TCC(J)=0.
+      DO 410 I=I1,I2
+cc      IF(IA(I,J).EQ.0) TSMP=TSMP+0.5
+cc      IF(IA(I,J).EQ.0) TCC(J)=TCC(J)+0.5
+      IF(IA(I,J,IK,K).EQ.0) TSMP=TSMP+exp(-1.)
+      IF(IA(I,J,IK,K).EQ.0) TCC(J)=TCC(J)+exp(-1.)
+  410 CONTINUE
+      DO 420 I=I1,I2
+      TR=0. 
+      DO 430 J=J1,J2
+cc      IF(IA(I,J).EQ.0) TR=TR+0.5
+cx      IF(IA(I,J,IK,K).EQ.0) TR=TR+0.5
+      IF(IA(I,J,IK,K).EQ.0) TR=TR+exp(-1.)
+  430 CONTINUE
+cc      TT=TOTALC(I)+TR
+      TT=TOTALC(I,IK)+TR
+      DO 420 J=J1,J2
+cc      IF(IA(J,I).EQ.0) IZ(K)=IZ(K)+1
+cc      AAA=IA(I,J)
+cc      IF(IA(I,J).EQ.0) AAA=0.5
+cc      AIC1(K)=AIC1(K)+AAA*LOG(AAA/(TT*(TOTALR(J)+TCC(J)))*(SAMP+TSMP))
+      AAA=IA(I,J,IK,K)
+cx      IF(IA(I,J,IK,K).EQ.0) AAA=0.5
+      IF(IA(I,J,IK,K).EQ.0) AAA=exp(-1.)
+      AIC1(K)=AIC1(K)+
+     &        AAA*LOG(AAA/(TT*(TOTALR(J,K)+TCC(J)))*(SAMP+TSMP))
+  420 CONTINUE
+      DO 440 J=J1,J2
+cc      IF(TOTALR(J).EQ.0) GO TO 440
+cc      AIC2(K)=AIC2(K)+(TOTALR(J)+TCC(J))*(LOG((TOTALR(J)+TCC(J))/
+cc     1        (SAMP+TSMP)))
+      IF(TOTALR(J,K).EQ.0) GO TO 440
+      AIC2(K)=AIC2(K)+
+     &(TOTALR(J,K)+TCC(J))*(LOG((TOTALR(J,K)+TCC(J))/(SAMP+TSMP)))
+  440 CONTINUE
+C
+C     INDEPENDENCE TEST BY AIC
+C
+      IDE=I2-I1+J2-J1
+      IDF1(K)=(I2-I1+1)*(J2-J1+1)-1
+      SA=-2.*(-AIC1(K)-IDE+IDF1(K))
+      IF(SA.GT.0.0)K10=K10+1
+cc  400 CONTINUE
+      AIC3(K)=-2.0*(AIC1(K)-IDF1(K)+IDE)
+  400 CONTINUE
+cc      J1=J2+1
+cc      IF(K21.EQ.N) GO TO 390
+cc      IF(IEXP.EQ.1) J3=FACE2(K21+1)
+cc      IF(IEXP.EQ.1) J2=J2+ITEM(J3)
+cc      IF(IEXP.NE.1) J2=J2+ITEM(K21+1)
+  390 CONTINUE
+cc      INDE(IK)=K10
+      K10=N-1
+      IF(IEXP.EQ.1) K10=N
+C
+C     ARRANGING IN ASCENDING ORDER OF AIC'S
+C
+      K11=K10
+      DO 450 K2=1,N
+      K3=K2-1
+      AMINN=1.D10
+c <<<
+      K6=1
+      K7=1
+c >>>
+      DO 510 K4=1,N
+      K=K4
+      IF(IEXP.EQ.1) K=FACE2(K)
+      IF(K.EQ.I3) K7=K4
+      IF(K.EQ.I3) GO TO 510
+      IF(K3.EQ.0) GO TO 500
+      DO 490 K5=1,K3
+      IF(K4.EQ.MIN(K5)) GO TO 510
+  490 CONTINUE
+  500 CONTINUE
+cc      IF(AMINN.LT.AIC3(K4)) GO TO 510
+cc      AMINN=AIC3(K4)
+      IF(AMINN.LT.AIC3(K)) GO TO 510
+      AMINN=AIC3(K)
+      K6=K4 
+  510 CONTINUE
+      IF(AMINN.EQ.1.D10) K6=K7
+      AMIN(K2)=AMINN 
+      MIN(K2)=K6
+  450 CONTINUE
+      IF(IEXP.NE.1) MIN(N)=I3
+      NN=K11+1
+cc      NNK(IK)=NN
+cc      IMX(1,IK)=I3
+      DO 530 I=2,NN
+      M1=MIN(I-1)
+      IF(IEXP.EQ.1) M1=FACE2(M1)
+cc      IF(I3.EQ.M1) NNK(IK)=NN-1
+      IF(I3.EQ.M1) GO TO 530
+cc      IMX(I,IK)=M1
+      IF(AMIN(I-1).LT.0.) MMM=I
+  530 CONTINUE
+cc      IF(NWW.LT.0) NNK(IK)=MMM
+C
+C     PRINTING ORDERED AIC'S
+C
+cc      WRITE(6,1002) (TITLE(I,I3),I=1,10)
+cc      WRITE(6,1014)
+      AS=0.
+      DO 540 K2=1,N
+      I4=MIN(K2)
+      I=I4
+  560 CONTINUE
+      AMMIN=AMIN(K2)
+      IF(AMMIN.EQ.1.D10) AMIN(K2)=0.0
+cc      IF(IEXP.NE.1) AIMIN(IK,I)=AMIN(K2)
+cc      IF(IEXP.EQ.1) AIMIN(I,IK)=AMIN(K2)
+      IF(K10.LT.K2) GO TO 540
+      IF(AMMIN.EQ.1.D10) GO TO 540
+      IF(K2.NE.1) AS=AMIN(K2)-AS
+      IF(IEXP.EQ.1) I4=FACE2(I4)
+cc      WRITE(6,1003) K2,(TITLE(I,I4),I=1,10),IDF(I4),AMIN(K2),AS
+c <<<
+      AIMIN(IK,I4)=AMIN(K2)
+      ORD(IK,K2)=I4
+c >>>
+      AS=AMIN(K2)
+  540 CONTINUE
+C
+C     'ICROSS' TWO-WAY TABLES PRINT OUT
+C
+cc      WRITE(6,1016)
+cc      IF(ICROSS.EQ.0.AND.K11.GT.10) K11=10
+cc      IF(ICROSS.GT.0.AND.K11.GT.ICROSS) K11=ICROSS
+cc      IF(IEXP.EQ.1) WRITE(6,1004) ((TITLE(I,I3),I=1,10),J=1,2)
+cc      IF(IEXP.NE.1) WRITE(6,1005) ((TITLE(I,I3),I=1,10),J=1,2)
+C
+      DO 570 K2=1,K11
+cc      I4=MIN(K2)
+cc      J1=NO1(I4)
+cc      IF(IEXP.EQ.1) I4=FACE2(I4)
+cc      IF(I3.EQ.I4) GO TO 570
+cc      J2=J1+ITEM(I4)-1
+cc      JJ=0
+c <<<
+      NV=ORD(IK,K2)
+      J1=1
+      J2=ITEM(NV)
+      PTT=0
+      II=0
+      DO 600 I=I1,I2
+      II=II+1
+cc      PT(II)=TOTALC(I)/SAMP*100.0
+cc  600 PTT=PTT+PT(II)
+      PT(II,IK)=TOTALC(I,IK)/SAMP*100.0
+  600 PTT=PTT+PT(II,IK)
+c >>>
+C
+      DO 580 J=J1,J2
+      TP=0
+cc      JJ=JJ+1
+cc      IF(TOTALR(J).NE.0) TP=100.0/TOTALR(J)
+      IF(TOTALR(J,NV).NE.0) TP=100.0/TOTALR(J,NV)
+      TC=0
+cc      II=0
+      DO 590 I=I1,I2
+cc      II=II+1
+cc      P(II,JJ)=IA(I,J)*TP
+cc  590 TC=TC+P(II,JJ)
+cc  580 TPAR(JJ)=TC
+      P(I,J,IK,NV)=IA(I,J,IK,NV)*TP
+  590 TC=TC+P(I,J,IK,NV)
+  580 TPAR(J,NV)=TC
+C
+c-------
+cx      PTT=0
+cx      II=0
+cx      DO 600 I=I1,I2
+cx      II=II+1
+cc      PT(II)=TOTALC(I)/SAMP*100.0
+cc  600 PTT=PTT+PT(II)
+c--------
+cc      IR=ITEM(I3)
+cc      IR1=1
+cc      IR2=IR
+cc      IF(IR2.GT.10) IR2=10
+cc      IR3=IR2
+cc      I11=I1
+cc      I21=I1+IR2-1
+cc  610 WRITE(6,1006)(IPR,IPR=IR1,IR2)
+cc      FM1(3)=FM2(IR3)
+cc      WRITE(6,FM1)(IPR,IPR=IR1,IR2)
+cc      WRITE(6,1004) ((TITLE(I,I4),I=1,10),I8=1,2)
+cc      JJ=0
+cc      DO 620 J=J1,J2
+cc      JJ=JJ+1
+cc      WRITE(6,1007) JJ,(IA(I,J),I=I11,I21),TOTALR(J)
+cc      FM3(5)=FM4(IR3)
+cc  620 WRITE(6,FM3)JJ,(P(I5,JJ),I5=IR1,IR2),TPAR(JJ),TOTALR(J)
+cc      WRITE(6,1008)(TOTALC(I5),I5=I11,I21),NSAMP
+cc      FM5(5)=FM4(IR3)
+cc      WRITE(6,FM5)(PT(I5),I5=IR1,IR2),PTT,NSAMP
+cc      IF(IR2.EQ.IR) GO TO 570
+cc      IR1=IR2+1
+cc      IR2=IR2+10
+cc      IF(IR2.GT.IR) IR2=IR
+cc      IR3=MOD(IR2,10)
+cc      IF(IR3.EQ.0)IR3=10
+cc      I11=I21+1
+cc      I21=I21+IR3
+cc      WRITE(6,1009)
+cc      GO TO 610
+  570 CONTINUE
+cc      I1=I2+1
+      IF(IK.EQ.L) GO TO 370
+      I3=FACE(IK+1)
+cc      I2=I2+ITEM(I3)
+  370 CONTINUE
+cc      LA=L
+cc      NA=N
+cc      IF(IEXP.NE.1) N1=L
+cc      IF(IEXP.NE.1) L=N
+cc      IF(IEXP.NE.1) N=N1
+C
+C     'SUMMARY OF AIC'S OF THE TWO-WAY TABLES' PRINT OUT
+C
+cc      IS=1
+cc      IE=10
+cc  890 IF(IE.GE.N1) IE=N1
+cc      DO 900 I=1,10
+cc      IH=0
+cc      DO 910 IJ=IS,IE
+cc      IH=IH+1
+cc      IF(IEXP.EQ.1) II=FACE2(IJ)
+cc      IF(IEXP.NE.1) II=FACE(IJ)
+cc      HY(I,IH)=TITLE(I,II)
+cc  910 CONTINUE
+cc  900 CONTINUE
+cc      WRITE(6,1010)
+cc      WRITE(6,1015)
+cc      WRITE(6,1012) ((HY(I,II),I=1,10),II=1,IH)
+cc      WRITE(6,1011)
+cc      DO 920 IK=1,L
+cc      IF(IEXP.EQ.1) II=FACE(IK)
+cc      IF(IEXP.NE.1) II=IK
+cc      WRITE(6,1013) (TITLE(I,II),I=1,10)
+cc      FAA(3)=BL
+cc      IH=0
+cc      DO 930 I=IS,IE
+cc      IF(IEXP.EQ.1) III=FACE2(I)
+cc      IF(IEXP.NE.1) III=FACE(I)
+cc      IH=IH+1
+cc      IF(IH.GT.8) FAA(3)=FAD(3)
+cc      FAA(2)=FAC(IH)
+cc      IF(III.NE.II) WRITE(6,FAA) AIMIN(I,IK)
+cc  930 CONTINUE
+cc  920 CONTINUE
+cc      IF(IE.EQ.N1) GO TO 880
+cc      IS=IE+1
+cc      IE=IS+9
+cc      GO TO 890
+cc  880 CONTINUE
+C
+C     'GRAY SHADING DISPLAY OF ALL THE AIC'S  ' PRINT OUT
+C
+cc      WRITE(6,1010)
+cc      CALL PROUT(AIMIN,IW(1),N1,L,NL,TITLE,HYO,HY,FACE,FACE2,IEXP,
+cc     1           NSAMP,LA,N3)
+cc      L=LA
+cc      N=NA
+cc      WRITE(6,1010)
+cc  320 CONTINUE
+ 1001 FORMAT(20I4)
+ 1002 FORMAT(1H1/1H ,'  LIST OF EXPLANATORY VARIABLES ARRANGED IN',
+     1        ' ASCENDING ORDER OF AIC'//1H ,'RESPONSE VARIABLE  : '
+     2        ,'(',10A1,')'/)
+ 1003 FORMAT(1H ,I5,10X,10A1,21X,I5,10X,F10.2,5X,F10.2)
+ 1004 FORMAT(1H0,'(',10A1,')',42X,'(',10A1,')')
+ 1005 FORMAT(//1H ,5X,'(',10A1,')',42X,'(',10A1,')')
+ 1006 FORMAT(1H0,9X,12I4)
+ 1007 FORMAT(1H ,I6,3X,12I4)
+ 1008 FORMAT(1H ,3X,'TOTAL',1X,12I4)
+ 1009 FORMAT(///)
+ 1010 FORMAT(1H1)
+ 1011 FORMAT(1H+,'EXPLANATORY '/1H ,'VARIABLES'/)
+ 1012 FORMAT(1H ,14X, 9(1X,10A1,1X),10A1)
+ 1013 FORMAT(1H ,'(',10A1,')')
+ 1014 FORMAT(1H ,'  NO.',2X,'EXPLANATORY VARIABLE     ',4X,'NUMBER OF CA
+     1TEGORIES',8X,'  A I C  ',4X,'DIFFERENCE OF AIC'/1H ,36X,'OF EXPLAN
+     2ATORY VARIABLE'/)
+ 1015 FORMAT(1H0,10X,' SUMMARY OF AIC''S FOR THE TWO-WAY TABLES '//)
+ 1016 FORMAT(1H1/1H ,'  TWO-WAY TABLES ARRANGED IN ASCENDING ORDER OF AI
+     1C')
+      RETURN
+      END
