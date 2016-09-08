@@ -485,8 +485,10 @@ catdap2 <-
         for (i in 1:lex)
           for (j in 1:n)
             if (explanatory.names[i] == title[j]) {
-              icls[2 + i] = j
-              m <- m + 1
+              if (j != ires) {
+                icls[2 + i] = j
+                m <- m + 1
+              }
             }
         if (m != lex) {
           iwa <- 3001
@@ -640,9 +642,7 @@ catdap2 <-
       }
       aic.order <- idata[2:n]
 
-      aorder <- NULL
-      for (i in 1:(lk77-1))
-        if (morder[i] > 1) aorder <- c(aorder, morder[i] - 1)
+      aorder <- morder- 1
       nsub <- length(aorder)
 
       nv <- rep(0, nsub)
@@ -650,26 +650,38 @@ catdap2 <-
       aaic <- rep(0, nsub)
       icaa <- icaa[2:lk77]
 
+      nzero <- 0
       for (i in 1:nsub) {
         j <- aorder[i]
-        nv[i] <- icaa[j] - 1
-        ncc[i] <- nnia[j]
-        aaic[i] <- aaam[j]
+        if (j > 0) {
+         nv[i] <- icaa[j] - 1
+         ncc[i] <- nnia[j]
+         aaic[i] <- aaam[j]
+        } else {
+          nzero <- nzero + 1
+        }
+      }
+      if (nzero > 1) {
+        nsub <- nsub - nzero + 1
+        nv <- nv[1:nsub]
+        ncc <- ncc[1:nsub]
+        aaic <- aaic[1:nsub]
       }
 
       cexp <- list()
       for (i in 1:nsub) {
-        j <- aorder[i] + 1
-        k <- nv[i] + 1
-        cexp[[i]] <- aic.order[caa[j, 2:k] - 1]
+        if (aorder[i] > 0) {
+          j <- aorder[i] + 1
+          k <- nv[i] + 1
+          cexp[[i]] <- aic.order[caa[j, 2:k] - 1]
+        } else {
+          cexp[[i]] <- 0
+        }
       }
 
       iby <- aperm(iby, c(2, 1, 3))
       ibc <- aperm(ibc, c(2, 1, 3))
       pbc <- aperm(pbc, c(2, 1, 3))
-
-      np1 <- ncc[1]
-      nn <- icaa[aorder[1]]
 
       ctbl <- list()
       ctbl.cnum <- list()
@@ -677,12 +689,22 @@ catdap2 <-
       caic <- rep(0, icl1)
       cinterval <- list()
       idx <- 0
-	  
-      ctbl.cnum[[icl1]] <- iby[1:np1, 2:nn, 1]
-      ctbl[[icl1]] <- ibc[1:np1, i1:i2, 1]
-      ctbl.p[[icl1]] <- pbc[1:np1, i1:i2, 1]
+
+      if (aorder[1] > 0) {
+        np1 <- ncc[1]
+        nn <- icaa[aorder[1]]
+        ctbl.cnum[[icl1]] <- iby[1:np1, 2:nn, 1]
+        ctbl[[icl1]] <- ibc[1:np1, i1:i2, 1]
+        ctbl.p[[icl1]] <- pbc[1:np1, i1:i2, 1]
+      } else {
+        ctbl.cnum[[icl1]] <- 0
+        ctbl[[icl1]] <- 0
+        ctbl.p[[icl1]] <- 0
+      }
+
       caic[icl1] <- aic1[1]
 
+#
       if (icl > 0) {   ## The output of the additional analysis 
         np1 <- 1
         idx <- idx + 1
@@ -717,6 +739,9 @@ catdap2 <-
 
       idx <- idx + 1    ## The output of the Minimum AIC Model 
       cint <- NULL
+
+      if (nv[1] > 0) {
+
       intval <- list()
       for (i in 1:nv[1]) {
         exv <- cexp[[1]][i]
@@ -736,12 +761,14 @@ catdap2 <-
         intval[[i]] <- intv
       cint <- c(cint, intval[i])
       }    # for (i in 1:nv[1]) end
+
+      }
       cinterval[[idx]] <- cint
 
       iaddflg <- 0
-      if (nsub > 2) { 
+      nbest <- 1
+      if (nsub > 1) { 
         aicm1 <- aic1[1]
-        nbest <- 1
         for (i in 2:nsub) {
           aicm2 <- aaic[i]
           daic <- abs(aicm2 - aicm1) / max(abs(aicm2), abs(aicm1))
@@ -824,6 +851,18 @@ catdap2 <-
 
     return(catdap2.out)
 }
+
+convi <- function(data) {
+    x1 <- unique(data)
+    y1 <- rank(x1)
+    n1 <- length(data)
+    n2 <- length(y1)
+    cdata <- rep(0, n1)
+    for (i in 1:n1)
+      for (j in 1:n2) if (data[i] == x1[j]) cdata[i] <- y1[j]
+    cname <- sort(x1)
+    return(list(cdata=cdata, cname=cname))
+} 
 
 #================================================================
 
@@ -913,18 +952,6 @@ addaicm <-
     }
 }
 
-convi <- function(data) {
-    x1 <- unique(data)
-    y1 <- rank(x1)
-    n1 <- length(data)
-    n2 <- length(y1)
-    cdata <- rep(0, n1)
-    for (i in 1:n1)
-      for (j in 1:n2) if (data[i] == x1[j]) cdata[i] <- y1[j]
-    cname <- sort(x1)
-    return(list(cdata=cdata, cname=cname))
-} 
-
 #========================
 
 print.catdap2 <- function(x,...) {
@@ -959,7 +986,7 @@ print.catdap2 <- function(x,...) {
       cat("----------------------------------------------------------------------------------------\n")
  
       nrank <- 0
-      daic2 <- 111
+      daic2 <- 1.0e+5
 
       for (i in 1:(n-1)) {
         idx <-x$aic.order[i]
@@ -1042,7 +1069,7 @@ print.catdap2 <- function(x,...) {
         for (j in 1:ktt) {
           ijk <- 0
           nrank <- 0
-          daic2 <- 111
+          daic2 <- 1.0e+5
 
           for (ij in 1:lk) {
             lk4 <- x$nv[ij]
@@ -1091,7 +1118,8 @@ print.catdap2 <- function(x,...) {
       cat("----------------------------------------------------------------------------------------\n")
       ijk <- 0
       nrank <- 0
-      daic2 <- 111
+      daic2 <- 1.0e+5
+      aaic2 <- -1.0e+5
       if (x$print.level == 0) lsub <- lk
       if (x$print.level == 1) lsub <- min(lk, 30)
       for (ij in 1:lsub) {
@@ -1108,11 +1136,28 @@ print.catdap2 <- function(x,...) {
           lkk <- x$cexp[[ij]][1]
           cat(sprintf("%20s", x$title[lkk]))
           cat(sprintf("%8i\t\t%8.2f\t%8.2f\t%8.2f\n", x$ncc[ij], x$aaic[ij], daic, w))
+
           if (lk4 == 2 || lk4 > 2)
             for (i in 2:lk4) {
               lkk <- x$cexp[[ij]][i]
               cat(sprintf("      %20s\n", x$title[lkk]))
             }
+          aaic2 <- aaaa
+
+        } else if (aaic2 < 0) {
+          ijk <- ijk + 1
+          cat(sprintf("%5i ", ijk))
+          cat("               - - -")
+          aaaa <- 0
+          if (ijk == 1 ) {
+            aaic1 <- 0
+            daic <- 0
+            w <- 1.0
+          } else {
+            daic <- aaaa - aaic1
+            w <- exp(-1. / 2 * daic)
+          }
+          cat(sprintf("%8i\t\t%8.2f\t%8.2f\t%8.2f\n", 0, 0.0, daic, w))
           aaic2 <- aaaa
         }  # if (lk4 > 0) end
       }  # for (ij in 1:lsub) end
@@ -1121,8 +1166,10 @@ print.catdap2 <- function(x,...) {
       icl <- x$icl
       if (iplt > 0) old.par <- par(no.readonly = TRUE)
       nwindow <- 0
-      ncc <- length(x$ctable$cnum)
-      for (k in 1:ncc) {
+      icflg <- 1
+
+      nctbl <- length(x$ctable$cnum)
+      for (k in 1:nctbl) {
         kkk <- k - icl
         if (kkk == 0) {
 #---------------------------------------------------------------------------------------#
@@ -1134,42 +1181,52 @@ print.catdap2 <- function(x,...) {
           cat("\n\n<< Contingency table constructed by the best subset of explanatory variables >>\n\n")
 #---------------------------------------------------------------------------------------#
           lk4 <- x$nv[kkk]
+          if (lk4 == 0) icflg <- 0
+          idm <- 0
         }
 
         cat(sprintf(" X(1) : %s\n", x$title[res]))
-        j1 <- 1
-        j2 <- rep(0, lk4)
-        mc <- rep(0, lk4)
         etitle <- list()
-        for (i in 1:lk4) {
-          if (kkk == 0) {
-            lkk <- x$icls[i+2]
-          } else {
-            lkk <- x$cexp[[kkk]][i]
+        if (lk4 > 0) {
+          j1 <- 1
+          j2 <- rep(0, lk4)
+          mc <- rep(0, lk4)
+          for (i in 1:lk4) {
+            if (kkk == 0) {
+              lkk <- x$icls[i+2]
+            } else {
+              lkk <- x$cexp[[kkk]][i]
+            }
+            cat(sprintf(" X(%i) : %s\n", (i+1), x$title[lkk]))
+            mc[i] <- lkk
+            etitle <- c(etitle, x$title[lkk])
+            j2[i] <- length(x$ctable.interval[[k]][[i]])
+            if (x$accuracy[lkk] != 0) j2[i] <- j2[i] - 1
           }
-          cat(sprintf(" X(%i) : %s\n", (i+1), x$title[lkk]))
-          mc[i] <- lkk
-          etitle <- c(etitle, x$title[lkk])
-          j2[i] <- length(x$ctable.interval[[k]][[i]])
-          if (x$accuracy[lkk] != 0) j2[i] <- j2[i] - 1
+          cat("\n")
+
+          mp <- 1
+          for (i in 1:lk4) mp <- mp * j2[i]
+          idm <- j2[1]
+          if (lk4 > 1) for (i in 2:lk4) idm <- c(idm, j2[i])
+
+          for (i in 1:lk4) cat(" X  ")
         }
-        cat("\n")
 
-        mp <- 1
-        for (i in 1:lk4) mp <- mp * j2[i]
-        idm <- j2[1]
-        if (lk4 > 1) for (i in 2:lk4) idm <- c(idm, j2[i])
-
-        for (i in 1:lk4) cat(" X  ")
         cat("\t\t response variable X(1)\n")
-        for (i in 1:lk4) cat(sprintf("(%i) ", (i+1)))
+
+        if (lk4 > 0) for (i in 1:lk4) cat(sprintf("(%i) ", (i+1)))
+
         for (i in i1:i2) cat(sprintf("           %3i      ", i))
         cat("     Total\n")
         for (ii in i1:(i2+2))  cat("-----------------")
         cat("\n")
+
+        idf <- TRUE
+        if (lk4> 0) {
+
         np <- dim(x$ctable$cnum[[k]])[1]
         if (is.null(np)) np <- length(x$ctable$cnum[[k]])
-
 
         idf <- is.null(dim(x$ctable$cnum[[k]])) 
         for (i in 1:np) {
@@ -1182,6 +1239,8 @@ print.catdap2 <- function(x,...) {
         }  # end for (i in 1:np)
 
         for (ii in i1:(i2+2))  cat("-----------------")
+
+        }
         cat("\n   Total")
         if (idf == FALSE && lk4 > 2) for (j in 1:(lk4-2)) cat("    ")
         for (j in i1:i2 ) cat(sprintf("%8i ( %5.1f )", x$total[[res]][j], ptc[j]))
@@ -1200,6 +1259,8 @@ print.catdap2 <- function(x,...) {
           for (i in i1:i2) cat(sprintf("\t%8i    \t%s\n", i, dname[[res]][i]))
           ctable.dname[[1]] <- dname[[res]]
         }
+
+        if (lk4 > 0) {
 
         for (i in 1:lk4) {
           if (kkk == 0) {
@@ -1221,12 +1282,13 @@ print.catdap2 <- function(x,...) {
           }
         }   #  for (i in 1:lk4) end
 
+        }
         cat(sprintf("\nAIC = %8.2f\n\n", x$caic[k]))
 
         if (iplt > 0)
-          nwindow <- plot.mosaic(iplt, res, icl, k, mp, np, idm, x$title, etitle, dname, x$ctable$n, ctable.dname, nc, x$aic.order, x$aic, x$tway.table, x$total, nwindow, old.par)
+          nwindow <- plot.mosaic(iplt, res, icl, k, mp, np, idm, x$title, etitle, dname, x$ctable$n, ctable.dname, nc, x$aic.order, x$aic, x$tway.table, x$total, nwindow, old.par, icflg)
 
-      } # for (k in  1:ncc) end
+      } # for (k in  1:ntbl) end
 
       if (iplt > 0)  par(ask=old.par$ask, mfcol=old.par$mfcol, mai=old.par$mai, cex.main=old.par$cex.main)
 
@@ -1305,7 +1367,7 @@ plot.single1 <- function(title, dname, res, item, aic.order, aic, tway.table, to
     m <- nc * nr
 
     new.mai <- old.par$mai
-    new.mai[1] <- new.mai[3] * 0.8
+    new.mai[1] <- new.mai[1] * 0.65
     new.mai[3] <- new.mai[3] * 0.5
     newcex.main <- old.par$cex.main * 0.8  
     mtitle <- "Single Explanatory Models\nin ascending order of AIC"
@@ -1386,7 +1448,7 @@ plot.single2 <- function(title, dname, res, item, aic.order, aic, tway.table, ol
     m <- nc * nr
 
     new.mai <- old.par$mai
-    new.mai[1] <- new.mai[3] * 0.8
+    new.mai[1] <- new.mai[1] * 0.65
     new.mai[3] <- new.mai[3] * 0.5
     newcex.main <- old.par$cex.main * 0.8  
     mtitle <- "Single Explanatory Models\nin ascending order of AIC"
@@ -1418,52 +1480,58 @@ plot.single2 <- function(title, dname, res, item, aic.order, aic, tway.table, ol
 }
 
 
-plot.mosaic <- function(iplt, res, icl, k, mp, np, idm, title, etitle, dname, ctable, ctable.dname, nc, aic.order, aic, tway.table, total, nwindow, old.par) {
+plot.mosaic <- function(iplt, res, icl, k, mp, np, idm, title, etitle, dname, ctable, ctable.dname, nc, aic.order, aic, tway.table, total, nwindow, old.par, iflg) {
 
     i1 <- 1
     i2 <- nc[res]
 
-    nex <- length(idm)
-    jdm <- array(0, nex)
-    for (i in 1:nex) jdm[i] <- idm[nex-i+1]
-    idm <- c(jdm, i2)
-    tt <- ctable[[k]]
-    t <- array(tt, dim=idm)
+    if (iflg > 0 ) {
+      nex <- length(idm)
+      jdm <- array(0, nex)
+      for (i in 1:nex) jdm[i] <- idm[nex-i+1]
+      idm <- c(jdm, i2)
+      tt <- ctable[[k]]
+      t <- array(tt, dim=idm)
+    }
 
     xtitle <- title[res]
     ytitle <- etitle[1]
 
     if (iplt == 1) {
-      t <- aperm(t, c(nex:1, nex+1))
-      for (i in 1:nex) dimnames(t)[i] <- list(ctable.dname[[i+1]])
-      dimnames(t)[nex+1] <- list(ctable.dname[[1]])
+      if (iflg > 0) {
+        t <- aperm(t, c(nex:1, nex+1))
+        for (i in 1:nex) dimnames(t)[i] <- list(ctable.dname[[i+1]])
+        dimnames(t)[nex+1] <- list(ctable.dname[[1]])
 
-      split <- "h"
-      offset <- 10
-      if (nex > 1)
-        for (i in 2:nex) {
-          ytitle <- c(ytitle, etitle[i])
-          split <- c(split, "h")
-          offset <- c(offset, 10)
-        }
-      split <- c(split, "v")
-      offset <- c(offset, 0)
+        split <- "h"
+        offset <- 10
+        if (nex > 1)
+          for (i in 2:nex) {
+            ytitle <- c(ytitle, etitle[i])
+            split <- c(split, "h")
+            offset <- c(offset, 10)
+          }
+        split <- c(split, "v")
+        offset <- c(offset, 0)
+      }
 
       if ((icl != 1 && k == 1)   || (icl == 1 && k == 2))
         plot.single1(title, dname, res, nc, aic.order, aic, tway.table, total, old.par, nwindow)
 
     } else if (iplt == 2) {
-      t <- aperm(t, c(nex+1, nex:1))
-      dimnames(t) <- ctable.dname
+      if (iflg > 0) {
+        t <- aperm(t, c(nex+1, nex:1))
+        dimnames(t) <- ctable.dname
 
-      if (nex > 1)
-        for (i in 2:nex) {
-          if (i %% 2 == 0) xtitle <- c(xtitle, etitle[i])
-          if (i %% 2 == 1) ytitle <- c(ytitle, etitle[i])
-        }
+        if (nex > 1)
+          for (i in 2:nex) {
+            if (i %% 2 == 0) xtitle <- c(xtitle, etitle[i])
+            if (i %% 2 == 1) ytitle <- c(ytitle, etitle[i])
+          }
 
-      split <- NULL
-      offset <- NULL
+        split <- NULL
+        offset <- NULL
+      }
 
       if ((icl != 1 && k == 1)   || (icl == 1 && k == 2))
         plot.single2(title, dname, res, nc, aic.order, aic, tway.table, old.par, nwindow)
@@ -1471,13 +1539,15 @@ plot.mosaic <- function(iplt, res, icl, k, mp, np, idm, title, etitle, dname, ct
 
     if (icl == 1 && k == 1) {
       mtitle <- "Mosaicplot for additinal contingency table"
-    } else {
+      par(mfcol=c(1, 1))
+      mosaicplot(t, color=TRUE, main=mtitle, xlab=paste(xtitle), ylab=paste(ytitle), dir=split,  off=offset)
+      nwindow <- nwindow + 1
+    } else if (iflg > 0) {
       dev.new()
       mtitle <- "Minimum AIC Model of\n the Response Variable Distribution"
+      par(mfcol=c(1, 1))
+      mosaicplot(t, color=TRUE, main=mtitle, xlab=paste(xtitle), ylab=paste(ytitle), dir=split,  off=offset)
     }
-    par(mfcol=c(1, 1))
-    mosaicplot(t, color=TRUE, main=mtitle, xlab=paste(xtitle), ylab=paste(ytitle), dir=split,  off=offset)
-    if (icl == 1 && k == 1)  nwindow <- nwindow + 1
     
     return(nwindow=nwindow)
 

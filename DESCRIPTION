@@ -1,5 +1,5 @@
 Package: catdap
-Version: 1.2.2
+Version: 1.2.4
 Title: Categorical Data Analysis Program Package
 Author: The Institute of Statistical Mathematics
 Maintainer: Masami Saga <msaga@mtb.biglobe.ne.jp>
@@ -11,6 +11,6 @@ License: GPL (>= 2)
 MailingList: Please send comments and bug reports to
         ismrp@jasp.ism.ac.jp
 NeedsCompilation: yes
-Packaged: 2016-02-17 05:42:22 UTC; msaga
+Packaged: 2016-09-07 08:25:32 UTC; msaga
 Repository: CRAN
-Date/Publication: 2016-02-17 10:52:16
+Date/Publication: 2016-09-08 07:33:46

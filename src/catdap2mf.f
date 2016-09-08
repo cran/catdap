@@ -617,12 +617,12 @@ c     of a single explanatory variable in case 'ity(k)=0'.
 c
       INCLUDE 'catdap_f.h'
 c
-      implicit real*8(a-h,o-z)
+cxx      implicit real*8(a-h,o-z)
 cc      integer*2 item,ia,idata,totalr,face,ite,title,iab,iaa,lcy,iw,isk,
 cc     1          totalc,ttrr,nc,ncc,ity,kp,knn,lj,lt,idat,item1,item2,
 cc     2          iconv,iskip,noo,icls,bl,mx,st
-      integer totalr,face,totalc,ttrr,caa
-      integer recode
+cxx      integer totalr,face,totalc,ttrr,caa
+cxx      integer recode
 cc      character*4 fmt
 c
 cc      dimension item1(n),item2(n),item(n),face(l),title(20,n),fmt(100),
@@ -634,20 +634,40 @@ cc     5          da(n),bmin(n),bmax(n),xx(n),am1(n),ai(n),kp(n),aa(n33),
 cc     6          ab(n,n33),nc(n33),ncc(n33),isk(2,iskip1),sk(20,iskip1),
 cc     7          lj(10),ax(n33),lt(10),ite(n),ity(n),idat(n),iw(inn),
 cc     8          w(jjn),icls(10,icl)
-      dimension item1(n),item2(n),ity(n),iconv(20,recode),face(l),
-     1           iskip(20,iskip1),isk(2,iskip1),sk(20,iskip1),
-     2           icls(max(10,nov+1),icl),xx(n),ida(n,nsamp),da(n,nsamp),
-     3           iab(n,n11,n33),totalc(n11),ttrr(n,n33),ab(n,n33),
-     4           iaa(n,n33),pa(n,n11,n33),ptr(n,n33),ptc(n11),idata(n),
-     5           ite(n),dx(n),aaam(ikr),caa(ikr,jkr),
-     6           icaa(ikr),nnia(ikr),morder(ikr),ier(3),
-     7           iby(nov,ikkk,icl+1),ibc(n11,ikkk,icl+1),
-     8           pbc(n11,ikkk,icl+1),aic1(icl+1),
-     9           iabse(nov,n33,icl+1)
-      dimension item(n),totalr(n33),ia(n,n11,n33),tttr(n33),a1(n11,n33),
-     1           lcy(10,n33),kp(n),nc(n33),ncc(n33),knn(n33),lj(10),
-     2           lt(10),idat(n),a(n11,n33),bmin(n),bmax(n),am1(n),ai(n),
-     3           aa(n33),ax(n33),totr(n33)
+cxx      dimension item1(n),item2(n),ity(n),iconv(20,recode),face(l),
+cxx     1           iskip(20,iskip1),isk(2,iskip1),sk(20,iskip1),
+cxx     2           icls(max(10,nov+1),icl),xx(n),ida(n,nsamp),da(n,nsamp),
+cxx     3           iab(n,n11,n33),totalc(n11),ttrr(n,n33),ab(n,n33),
+cxx     4           iaa(n,n33),pa(n,n11,n33),ptr(n,n33),ptc(n11),idata(n),
+cxx     5           ite(n),dx(n),aaam(ikr),caa(ikr,jkr),
+cxx     6           icaa(ikr),nnia(ikr),morder(ikr),ier(3),
+cxx     7           iby(nov,ikkk,icl+1),ibc(n11,ikkk,icl+1),
+cxx     8           pbc(n11,ikkk,icl+1),aic1(icl+1),
+cxx     9           iabse(nov,n33,icl+1)
+      integer :: nsamp, n, l, recode, iskip1, it, ipart, nov, icl,
+     1           item1(n), item2(n), ity(n), iconv(20,recode),
+     2           face(l), iskip(20,iskip1), isk(2,iskip1),
+     3           icls(max(10,nov+1),icl), ida(n,nsamp), 
+     4           iab(n,n11,n33), totalc(n11), ttrr(n,n33), iaa(n,n33),
+     5           idata(n), ite(n), caa(ikr,jkr), icaa(ikr), nnia(ikr), 
+     6           lk77, morder(ikr), iby(nov,ikkk,icl+1),
+     7           ibc(n11,ikkk,icl+1), iabse(nov,n33,icl+1),
+     8           n11, n33, ikr, jkr, ikkk, ier(3)
+      real(8) :: sk(20,iskip1), xx(n), da(n,nsamp), ab(n,n33),
+     1           pa(n,n11,n33), dx(n), aaam(ikr),
+     2           pbc(n11,ikkk,icl+1), aic1(icl+1), baseaic, eps01
+cxx      dimension item(n),totalr(n33),ia(n,n11,n33),tttr(n33),a1(n11,n33),
+cxx     1           lcy(10,n33),kp(n),nc(n33),ncc(n33),knn(n33),lj(10),
+cxx     2           lt(10),idat(n),a(n11,n33),bmin(n),bmax(n),am1(n),ai(n),
+cxx     3           aa(n33),ax(n33),totr(n33)
+      integer :: item(n), totalr(n33), ia(n,n11,n33), lcy(10,n33),
+     1           kp(n), nc(n33), ncc(n33), knn(n33), lj(10), lt(10),
+     2           idat(n)
+      real(8) :: ptr(n,n33), ptc(n11), tttr(n33), a1(n11,n33),
+     1           a(n11,n33), bmin(n), bmax(n), am1(n), ai(n), aa(n33),
+     2           ax(n33), totr(n33), bmagic, xmagic, am, am2, am11, aii,
+     3           sum, shift, expo, tsmp, aaa, al, al0, aic, aicmm, daic,
+     4           ddd, as, as1, tt, damx
 c
 cc      character*4    fm1(20),fm2(20),fm3(20)
 cc      character*1    bl,mx,st
@@ -678,41 +698,43 @@ c <<<
       ikp=n
       ig=face(1)
       if(ig.eq.0) return
-
-      iab = 0
-      totalc = 0
-      ttrr = 0.0d0
-      ab = 0.0d0
-      iaa = 0
-      pa = 0.0d0
-      idata = 0
-      ite = 0
-      dx = 0.0d0
-      aaam = 0.0d0
-      caa = 0.0d0
-      icaa = 0
-      nnia = 0
-      morder = 0
-      iby = 0
-      ibc = 0
-      pbc = 0
-      aic1 = 0
-      iabse = 0
-      ier = 0
+c
+      iab(1:n,1:n11,1:n33) = 0
+      ia(1:n,1:n11,1:n33) = 0
+      totalc(1:n11) = 0
+      ttrr(1:n,1:n33) = 0
+      ab(1:n,1:n33) = 0.0d0
+      iaa(1:n,1:n33) = 0
+      pa(1:n,1:n11,1:n33) = 0.0d0
+      idata(1:n) = 0
+      ite(1:n) = 0
+      dx(1:n) = 0.0d0
+      aaam(1:ikr) = 0.0d0
+      caa(1:ikr,1:jkr) = 0
+      icaa(1:ikr) = 0
+      nnia(1:ikr) = 0
+      morder(1:ikr) = 0
+      icl1 = icl+1
+      iby(1:nov,1:ikkk,1:icl1) = 0
+      ibc(1:n11,1:ikkk,1:icl1) = 0
+      pbc(1:n11,1:ikkk,1:icl1) = 0.0d0
+      aic1(1:icl1) = 0.0d0
+      iabse(1:nov,1:n33,1:icl) = 0
+      ier(1:3) = 0
 c >>>
       nx1=n
 cc      iskip1=iskip1-1
 cc      recode=recode-1
-      do 40 i=1,n11
+cxx      do 40 i=1,n11
 cc      do 40 j=1,n22
 cc      ia(i,j)=0
 cc   40 iab(i,j)=0
-      do 39 j=1,n33
-      do 38 k=1,n
-      ia(k,i,j)=0      
-   38 iab(k,i,j)=0
-   39 continue
-   40 continue
+cxx      do 39 j=1,n33
+cxx      do 38 k=1,n
+cxx      ia(k,i,j)=0      
+cxx   38 iab(k,i,j)=0
+cxx   39 continue
+cxx   40 continue
       if(it.eq.0) go to 80
 c
 c     choice of the initial class interval for continuous data in
@@ -737,7 +759,8 @@ cc      if(da(iskip2).gt.sk(2*ii-1,i).and.da(iskip2).lt.sk(2*ii,i))
    88 continue
       iskip3=iskip(2,i)
 cc      idata1=da(iskip2)+0.1
-      idata1=da(iskip2,j)
+cxx      idata1=da(iskip2,j)
+      idata1=int(da(iskip2,j))
       do 89 ii=1,iskip3
       if(idata1.eq.iskip(ii+2,i)) go to 90
    89 continue
@@ -776,9 +799,10 @@ c >>>
       do 120 i=1,n
 c-----    modified by M.I.
       if(i .eq. magic) then
-           ity (i) = 2 
+           ity(i) = 2
            bmagic = bmin(magic)
-           xmagic = (bmax(magic)-bmin(magic))/item2(magic)
+cxx           xmagic = (bmax(magic)-bmin(magic))/item2(magic)
+           xmagic = (bmax(magic)-bmin(magic))/dble(item2(magic))
            do 115 kk=0,item2(magic)
              ab(magic, kk+1) = bmin(magic)+xmagic*kk
   115      continue
@@ -787,17 +811,20 @@ c-----    modified by M.I.
       endif
 c-----
       if(xx(i).eq.0) go to 120
-      mm=(bmax(i)-bmin(i))/xx(i)+1
+cxx      mm=(bmax(i)-bmin(i))/xx(i)+1
+      mm=int((bmax(i)-bmin(i))/xx(i))+1
       mm=min(mm,50,nj)
-      m=((bmax(i)-bmin(i))/xx(i)  )/mm+1
+cxx      m=((bmax(i)-bmin(i))/xx(i)  )/mm+1
+      m=int(((bmax(i)-bmin(i))/xx(i))/mm)+1
       ai(i)=xx(i)*m
-      i1=bmin(i)/ai(i)
+cxx      i1=bmin(i)/ai(i)
+      i1=int(bmin(i)/ai(i))
 cc------------------------------ cat1
 cc      am1(i)=(i1+0.5)*ai(i)
 cc------------------------------
       am1(i)=i1*ai(i)+0.5*xx(i)
       if(am1(i).ge.bmin(i)) am1(i)=am1(i)-ai(i)
-      if(abs(am1(i)-bmin(i)).lt.xx(i)/1.d5) am1(i)=am1(i)-ai(i)
+      if(dabs(am1(i)-bmin(i)).lt.xx(i)/1.d5) am1(i)=am1(i)-ai(i)
       am2=am1(i)
       ab(i,1)=am2
       do 130 ii=1,100
@@ -826,7 +853,8 @@ cc      read(1) (da(j),j=1,n)
       do 170 j=1,n
 c-----    modified by M.I.
          if(j .eq. magic) then
-           iv = (da(j,k)-bmagic)/xmagic + 1
+cxx           iv = (da(j,k)-bmagic)/xmagic + 1
+           iv = int((da(j,k)-bmagic)/xmagic) + 1
            if(iv .gt. imagic) iv = imagic
            da(j,k) = iv
          endif
@@ -845,7 +873,7 @@ cc      if(da(j).gt.am11) go to 190
 cc      if(abs(da(j)-am11).lt.xx(j)/1.d5) go to 190
 cc      idata(j)=ii1
       if(da(j,k).gt.am11) go to 190
-      if(abs(da(j,k)-am11).lt.xx(j)/1.d5) go to 190
+      if(dabs(da(j,k)-am11).lt.xx(j)/1.d5) go to 190
       ida(j,k)=ii1
       go to 200
   190 continue
@@ -853,7 +881,8 @@ cc      idata(j)=ii1
       go to 170
   180 continue
 cc      idata(j)=da(j)+0.01
-      ida(j,k)=da(j,k)+0.01
+cxx      ida(j,k)=da(j,k)+0.01
+      ida(j,k)=int(da(j,k)+0.01)
       if(k.ne.1) go to 170
       item(j)=item2(j)-item1(j)+1
       iii=1
@@ -1027,10 +1056,11 @@ c >>>
       if(k.eq.i3) go to 330
       itype=ity(k)
 cc      jj=0
-      do 340 j=j1,j2
+cxx      do 340 j=j1,j2
 cc      jj=jj+1
 cc  340 totalr(jj)=0
-  340 totalr(j)=0
+cxx  340 totalr(j)=0
+      totalr(j1:j2)=0
 cc      ii=0
       do 350 i=i1,i2
 cc      jj=0
@@ -1088,16 +1118,17 @@ cc      if(totalc(ii).ne.0) itot=itot+1
       ptc(i)=(totalc(i)*100.)/samp
       if(totalc(i).ne.0) itot=itot+1
   370 continue
-      if(itot.lt.2) then
+cc      if(itot.lt.2) then
 cc      write(4,2037)
-      ier(1)=2037
+      if(itot.lt.2) then
+         ier(1)=2037
 cc      stop 10
-      return
- 2037 format('caution:'/
-     &       '    the program catdap cannot deal with data sets where',
-     &       ' the number of'/
-     &       'non-zero frequency categories of the response variables',
-     &       ' is less than 2.')
+         return
+cx 2037 format('caution:'/
+cx     &       '    the program catdap cannot deal with data sets where',
+cx     &       ' the number of'/
+cx     &       'non-zero frequency categories of the response variables',
+cx     &       ' is less than 2.')
       end if
 cc      jj=0
       do 390 j=j1,j2
@@ -1172,12 +1203,16 @@ cc      ii0=ii
 cc      do 412 i=1,ii
       ii0=i2
       do 412 i=1,i2
-  412 if(totalc(i).eq.0) ii0=ii0-1
+cxx  412 if(totalc(i).eq.0) ii0=ii0-1
+      if(totalc(i).eq.0) ii0=ii0-1
+  412 continue
 cc      jj0=jj
 cc      do 413 j=1,jj
       jj0=j2
       do 413 j=1,j2
-  413 if(totalr(j).eq.0) jj0=jj0-1
+cxx  413 if(totalr(j).eq.0) jj0=jj0-1
+      if(totalr(j).eq.0) jj0=jj0-1
+  413 continue
       inn=ii0*jj0-jj0-ii0+1
       aic=-2.*(al-inn)
       dx(k21)=aic
@@ -1192,22 +1227,27 @@ cc      do 414 i=1,ii
       nj=j2-1
       ii0=i2
       do 414 i=i1,i2
-  414 if(totalc(i).eq.0) ii0=ii0-1
+cxx  414 if(totalc(i).eq.0) ii0=ii0-1
+      if(totalc(i).eq.0) ii0=ii0-1
+  414 continue
   440 continue
       n1=n1+1
 cc      do 450 jj3=1,jj
-      do 450 jj3=1,j2
-      totr(jj3)=0.
+CXX      do 450 jj3=1,j2
+cxx      totr(jj3)=0.
+      totr(1:j2)=0.
 cc      do 450 ii1=1,ii
-      do 450 ii1=1,i2
-  450 a1(ii1,jj3)=0.
+cxx      do 450 ii1=1,i2
+cxx  450 a1(ii1,jj3)=0.
+      a1(1:i2,1:j2)=0.
       jj1=0
 c <<<
       jj=1
       kkj=1
 c >>>
 cc      do 460 j=1,jj
-      do 460 j=1,j2
+cxx      do 460 j=1,j2
+      do 461 j=1,j2
 c <<<
       jj=j
 c >>>
@@ -1225,6 +1265,7 @@ cc      do 470 i=1,ii
 cc      if(jj1.eq.jj) go to 480
       if(jj1.eq.j2) go to 480
   460 continue
+  461 continue
   480 continue
 cc      nc(j)=kj
       nc(jj)=kkj
@@ -1259,7 +1300,9 @@ cc      do 510 i=1,ii
   510 continue
       kk0=kk
       do 511 j=1,kk
-  511 if(totr(j).eq.0.) kk0=kk0-1
+cxx  511 if(totr(j).eq.0.) kk0=kk0-1
+      if(totr(j).eq.0.) kk0=kk0-1
+  511 continue
       inn=ii0*kk0-kk0-ii0+1
       aic=-2.*(al-inn)
       aicmm=aic
@@ -1271,23 +1314,28 @@ cc      do 510 i=1,ii
       n10=n1-1
   550 continue
 cc      do 560 jj3=1,jj
-      do 560 jj3=1,j2
-      totr(jj3)=0.
+cxx      do 560 jj3=1,j2
+cxx      totr(jj3)=0.
+      totr(1:j2)=0.
 cc       do 560 ii1=1,ii
-      do 560 ii1=1,i2
-  560 a1(ii1,jj3)=0.
+cxx      do 560 ii1=1,i2
+cxx  560 a1(ii1,jj3)=0.
+      a1(1:i2,1:j2)=0.
       jj1=0
       if(n10.eq.0) go to 540
       nc(1)=n10
-      do 570 kj=1,n10
+cxx      do 570 kj=1,n10
+      do 571 kj=1,n10
       totr(1)=totr(1)+totalr(kj)
 cc      do 570 i=1,ii
       do 570 i=1,i2
       a1(i,1)=a1(i,1)+a(i,kj)
   570 continue
+  571 continue
       jj1=n10
 cc      do 580 j=2,jj
-      do 580 j=2,j2
+cxx      do 580 j=2,j2
+      do 581 j=2,j2
       nc(j)=n1
       do 580 kj=1,n1
       jj1=jj1+1
@@ -1298,6 +1346,7 @@ cc      do 590 i=1,ii
   590 continue
       if(jj1.eq.j2) go to 600
   580 continue
+  581 continue
   600 continue
       kk=j
       nc(j)=kj
@@ -1331,7 +1380,9 @@ cc      do 620 i=1,ii
   620 continue
       kk0=kk
       do 621 j=1,kk
-  621 if(totr(j).eq.0.) kk0=kk0-1
+cxx  621 if(totr(j).eq.0.) kk0=kk0-1
+      if(totr(j).eq.0.) kk0=kk0-1
+  621 continue
       inn=ii0*kk0-kk0-ii0+1
       aic=-2.*(al-inn)
 ccxx      if(aicmm.lt.aic) go to 640
@@ -1441,27 +1492,38 @@ cc      jmaxx=jmax0
 c
 c     printing out the two-way table with maice
 c
-      do 801 i=i1,i2
+cxx      do 801 i=i1,i2
+      do 803 i=i1,i2
 cc      jj=j1-1
 cc      j11=jjj
       jj=0
-      do 801 j=1,kk5
+cxx      do 801 j=1,kk5
+      do 802 j=1,kk5
       kj5=lcy(kk1,j)
 cc      j11=j11+1
       do 801 ij1=1,kj5
       jj=jj+1
 cc  801 iab(i,j11)=iab(i,j11)+ia(i,jj)
-  801 iab(k21,i,j)=iab(k21,i,j)+ia(k21,i,jj)
+      iab(k21,i,j)=iab(k21,i,j)+ia(k21,i,jj)
+  801 continue
+  802 continue
+  803 continue
       jity=0
 cc      j11=jjj
-      do 803 j=1,kk5
+cxx      do 803 j=1,kk5
+      do 805 j=1,kk5
       iitt=0
-      do 802 i=i1,i2
+cxx      do 802 i=i1,i2
+      do 804 i=i1,i2
 cc  802 iitt=iitt+iab(i,j11+j)
-  802 iitt=iitt+iab(k21,i,j)
-      if(iitt.eq.0) go to 803
+cxx  802 iitt=iitt+iab(k21,i,j)
+      iitt=iitt+iab(k21,i,j)
+  804 continue
+cxx      if(iitt.eq.0) go to 803
+      if(iitt.eq.0) go to 805
       jity=jity+1
-  803 continue
+cxx  803 continue
+  805 continue
       if(jity.le.1) ity(k21)=-1
       if(jity.le.1) dx(k21)=1.d9
       if(jity.le.1) go to 870
@@ -1581,13 +1643,15 @@ cc      ii=0
 cc      ttrr(j)=0
       ttrr(k3,j)=0
   800 continue
-      do 810 i=i1,i2
+cxx      do 810 i=i1,i2
+      do 811 i=i1,i2
 cc      jj=0
       do 810 j=jj1,jj2
 cc      jj=jj+1
 cc      ttrr(jj)=ttrr(jj)+iab(i,j)
       ttrr(k3,j)=ttrr(k3,j)+iab(k3,i,j)
   810 continue
+  811 continue
 cc      ii=0
       do 820 i=i1,i2
 cc      ii=ii+1
@@ -1794,60 +1858,60 @@ cc      close(4)
 cc      close(in)
 cc      stop 10
       return
- 2001 format(1h )
- 2002 format(8x,a1,'(',20a1,')',37x,a1,'(',20a1,')')
- 2003 format(7x,20i5)
- 2004 format(1h+,60x,7x,10i6)
- 2005 format(a1,'(',20a1,')',37x,a1,'(',20a1,')')
- 2006 format(i5,2x,20i5)
- 2007 format(1h+,60x,i5,2x,10f6.1)
- 2008 format(i10,15x,d12.5,' - ',d12.5)
- 2009 format(i10,20x,i10)
- 2010 format('total',2x,20i5)
- 2011 format(1h+,60x,'total',2x,10f6.1)
- 2012 format(' ')
- 2013 format(7x,20i6)
- 2014 format(i5,2x,20f6.1)
- 2015 format('total',2x,20f6.1)
- 2016 format(' ia or a dimension over ',4i10)
- 2017 format('+',41('-'),'+'/
-     1       'i the coresponding two-way tables         i'/
-     2       'i (each having an optimal categorization) i'/
-     3       '+',41('-'),'+')
- 2018 format(' response variable  : ',20a1)
- 2019 format(72('=')//'<2>'/'+',38('-'),'+'/
-     1       'i list of single explanatory variables i'/
-     2       'i (arranged in ascending order of aic) i'/'+',38('-'),'+'/
-     3       'response variable  : ','(',20a1,')')
- 2020 format(72('-')/
-     1       '  no.',2x,'explanatory',    4x,'number of categories',
-     2 3x,'    ',4x,'difference       '/
-     3 7x,'variable  ',5x,'of exp. var. ',7x,'  a i c ',2x,' of aic',
-     4 6x,'weight'/72('-'))
- 2021 format(i5,3x,20a1,1x,i5,5x,f10.2,1x,f10.2,1x,f10.5)
- 2022 format(100a1)
- 2023 format(1h+,60x,60a1)
- 2024 format('<note>'/5x,20a1,5x,'class interval')
- 2025 format('<3',i1,'>')
- 2026 format('<3',i2,'>')
- 2027 format('<3',i3,'>')
- 2028 format(72('=')//'<3>')
- 2029 format(72('-'))
- 2030 format(72('+'))
- 2031 format( ' weight'/
-     1       15x,'0.0  0.1  0.2  0.3  0.4  0.5  0.6  0.7  0.8  0.9  1.0'
-     2       /16x,10('+----'),'+')
- 2032 format(i4,1x,10a1,1x,'i',50a1)
- 2033 format(16x,10('+----'),'+')
- 2034 format(//' error'/
-     1       ' the response variable "',20a1,'" is continuous.'/
-     2       ' a continuous variable cannot be specified as the res',
-     3       'ponse variable.')
- 2035 format(//' error'/
-     1       ' the value of ',i3,'-th variable of ',i5,'-th ',
-     2       'unit'/' is beyond the interval specified in cols 26-28',
-     3       ' and 29-30.')
- 2036 format(i5,3x,20a1,1x,i5,'(1)',6x,3(' - - -   ',1x))
+cc 2001 format(1h )
+cc 2002 format(8x,a1,'(',20a1,')',37x,a1,'(',20a1,')')
+cc 2003 format(7x,20i5)
+cc 2004 format(1h+,60x,7x,10i6)
+cc 2005 format(a1,'(',20a1,')',37x,a1,'(',20a1,')')
+cc 2006 format(i5,2x,20i5)
+cc 2007 format(1h+,60x,i5,2x,10f6.1)
+cc 2008 format(i10,15x,d12.5,' - ',d12.5)
+cc 2009 format(i10,20x,i10)
+cc 2010 format('total',2x,20i5)
+cc 2011 format(1h+,60x,'total',2x,10f6.1)
+cc 2012 format(' ')
+cc 2013 format(7x,20i6)
+cc 2014 format(i5,2x,20f6.1)
+cc 2015 format('total',2x,20f6.1)
+cc 2016 format(' ia or a dimension over ',4i10)
+cc 2017 format('+',41('-'),'+'/
+cc     1       'i the coresponding two-way tables         i'/
+cc     2       'i (each having an optimal categorization) i'/
+cc     3       '+',41('-'),'+')
+cc 2018 format(' response variable  : ',20a1)
+cc 2019 format(72('=')//'<2>'/'+',38('-'),'+'/
+cc     1       'i list of single explanatory variables i'/
+cc     2       'i (arranged in ascending order of aic) i'/'+',38('-'),'+'/
+cc     3       'response variable  : ','(',20a1,')')
+cc 2020 format(72('-')/
+cc     1       '  no.',2x,'explanatory',    4x,'number of categories',
+cc     2 3x,'    ',4x,'difference       '/
+cc     3 7x,'variable  ',5x,'of exp. var. ',7x,'  a i c ',2x,' of aic',
+cc     4 6x,'weight'/72('-'))
+cc 2021 format(i5,3x,20a1,1x,i5,5x,f10.2,1x,f10.2,1x,f10.5)
+cc 2022 format(100a1)
+cc 2023 format(1h+,60x,60a1)
+cc 2024 format('<note>'/5x,20a1,5x,'class interval')
+cc 2025 format('<3',i1,'>')
+cc 2026 format('<3',i2,'>')
+cc 2027 format('<3',i3,'>')
+cc 2028 format(72('=')//'<3>')
+cc 2029 format(72('-'))
+cc 2030 format(72('+'))
+cc 2031 format( ' weight'/
+cc     1       15x,'0.0  0.1  0.2  0.3  0.4  0.5  0.6  0.7  0.8  0.9  1.0'
+cc     2       /16x,10('+----'),'+')
+cc 2032 format(i4,1x,10a1,1x,'i',50a1)
+cc 2033 format(16x,10('+----'),'+')
+cc 2034 format(//' error'/
+cc     1       ' the response variable "',20a1,'" is continuous.'/
+cc     2       ' a continuous variable cannot be specified as the res',
+cc     3       'ponse variable.')
+cc 2035 format(//' error'/
+cc     1       ' the value of ',i3,'-th variable of ',i5,'-th ',
+cc     2       'unit'/' is beyond the interval specified in cols 26-28',
+cc     3       ' and 29-30.')
+cc 2036 format(i5,3x,20a1,1x,i5,'(1)',6x,3(' - - -   ',1x))
       end
 cc      subroutine mdap(item,nsamp,iaa,imm,ibd,iby,ib,ibc,items,itemz,ity,
 cc     1                idt,itemx,ias1,itemy,itemt,lc,lca,ca,ica,lg,cb,
@@ -1864,13 +1928,13 @@ c     this subroutine searches for the optimal multidimensional
 c     contingency table with respect to the combination of explanatory
 c     variables and the categorization of each one.
 c
-      implicit real*8(a-h,o-z)
+cxx      implicit real*8(a-h,o-z)
 cc      integer*2 ib,ias1,itemy,lc,itemt,c,lca,ca,ica,lg,cb,ibc,items,
 cc     1          ity,itype,ias2,iw,iaa,idt,nni,data,imm,icon,icon1,
 cc     2          icon2,caa,icaa,nnia,idata,iconv,title,item1,itemz,
 cc     3          item,itemx,ibd,iby,icls
 cc      integer*2 title
-      integer ca,data,caa
+cxx      integer ca,data,caa
       integer recode
 cc      dimension ibd(ikkk),iby(n),ib(ikkk),pbc(ikkk),ibc(ikkk),
 cc     1          items(2,n),itemz(ikh,n),c(20,n),idt(n),idata(nx),
@@ -1882,18 +1946,22 @@ cc     6          w(jnn),data(nsamp,n),imm(n),icon(n,ikn),icon1(n,ikn),
 cc     7            ica(ikr),lg(ikr),nni(ikr),itype(n),ias2(n,ikn),
 cc     8            data(nsamp,n),icon(n,ikn),icon1(n,ikn),
 cc     9            icaa(ikr),nnia(ikr),pbcc(n11),morder(ikr)
-      dimension iaa(nx,n33),imm(nx),idata(nx,nsamp),aic1(icl+1),
-     1           iby(n,ikkk,icl+1),ibc(n11,ikkk,icl+1),
-     2           pbc(n11,ikkk,icl+1),caa(ikr,jkr),icaa(ikr),
-     3           nnia(ikr),aaa(ikr),da(nx,nsamp),ab(nx,n33),xx(nx),
-     4           iconv(20,recode),item1(nx),morder(ikr),
-     4           icls(max(10,n+1),icl),
-     5           ibd(n11),ib(ikkk),item(nx),itemx(n),items(2,n),ity(nx),
-     6           itemt(n,2),itemy(n),itemz(ikh,n),ias1(2,n,ikn),
-     7           ias2(n,ikn),lca(n),aa(ikr),aicmm(ikh),pbcc(n11),lc(n),
-     8           ca(ikr,jkr),ica(ikr),lg(ikr),nni(ikr),itype(n),idt(n),
-     9           data(nsamp,n),icon(n,ikn),icon1(n,ikn),icon2(n,ikn),
-     &           ier(2),iabse(n,n33,icl+1)
+      integer :: item(nx), nsamp, iaa(nx,n33), imm(nx), idata(nx,nsamp),
+     1           iby(n,ikkk,icl+1), ibc(n11,ikkk,icl+1), caa(ikr,jkr),
+     2           icaa(ikr), nnia(ikr), iabse(n,n33,icl+1), 
+     3           iconv(20,recode), item1(nx), ity(nx), itx, ikkk, ikr,
+     4           jkr, ikh, ikn, lk77, morder(ikr),n, n11, n33,
+     5           nx, icl, icls(max(10,n+1),icl), ier(2)
+      real(8) :: aic1(icl+1), pbc(n11,ikkk,icl+1), aaa(ikr),
+     1           da(nx,nsamp), ab(nx,n33), xx(nx), eps01
+c
+      integer :: ibd(n11), ib(ikkk), itemx(n), items(2,n),
+     1           itemt(n,2), itemy(n), itemz(ikh,n), ias1(2,n,ikn),
+     2           ias2(n,ikn), lca(n), lc(n), ca(ikr,jkr), ica(ikr),
+     3           lg(ikr), nni(ikr), itype(n), idt(n), data(nsamp,n),
+     4           icon(n,ikn), icon1(n,ikn), icon2(n,ikn)
+      real(8) :: aa(ikr), aicmm(ikh), pbcc(n11), aic, aicm, acmmm,
+     1           aminx, aaaa, daic
 cc      character*4 fmt(20),fm1(5),fm2(5),fm3(4),fm4(10),fm11(10)
 cc      character*4 fm12(10),fm13(10),fm21(10),fm22(10),fm23(10)
 cc      character*1 mxx(6)
@@ -1962,7 +2030,8 @@ c <<<
       j=1
 c >>>
 cc      if(itx.ne.0.and.xx(iy3).eq.0) j=da(iy3)+0.1
-      if(itx.ne.0.and.xx(iy3).eq.0) j=da(iy3,i)+0.1
+cxx      if(itx.ne.0.and.xx(iy3).eq.0) j=da(iy3,i)+0.1
+      if(itx.ne.0.and.xx(iy3).eq.0) j=int(da(iy3,i)+0.1)
       if(itx.ne.0.and.xx(iy3).eq.0) go to 1110
       kk5=item(iy3)
       do 1120 j=1,kk5
@@ -2023,7 +2092,8 @@ cc      if(ab(iy3,j+1).gt.da(iy3)) go to 1110
       do 16 i=1,ikh
       aicmm(i)=1.d10
    16 continue
-      do 20 i=1,n
+cxx      do 20 i=1,n
+      do 21 i=1,n
       itemm=itemx(i)+1
       do 20 j=1,itemm
       ias1(1,i,j)=1
@@ -2031,6 +2101,7 @@ cc      if(ab(iy3,j+1).gt.da(iy3)) go to 1110
       if(j.ne.itemm) icon(i,j)=j
       if(j.ne.itemm) icon1(i,j)=j
    20 continue
+   21 continue
 c
 c     storage allocation for the necessary variables
 c
@@ -2076,8 +2147,11 @@ cc     3          lk7,ikr,ikn,ikf,n,nsamp,iw(i20),nnn,in)
       lk5=lk2
       lk77=lk7
       do 40 i=1,lk5
-   40 lca(i)=lc(i)
-      do 35 i=1,lk77
+cxx   40 lca(i)=lc(i)
+      lca(i)=lc(i)
+   40 continue
+cxx      do 35 i=1,lk77
+      do 36 i=1,lk77
       aaa(i)=aa(i)
       icaa(i)=ica(i)
       nnia(i)=nni(i)
@@ -2086,6 +2160,7 @@ cc      do 35 ii=1,10
       do 35 ii=1,icaa(i)
       caa(i,ii)=ca(i,ii)
    35 continue
+   36 continue
       do 31 i=1,n
       itemxx=itemz(1,i)
       do 30 iii=1,itemxx
@@ -2103,10 +2178,12 @@ c
 c <<<
       ll=1
 c >>>
-      do 65 i=1,n
+cxx      do 65 i=1,n
+      do 66 i=1,n
       do 65 iii=1,ikn
       icon(i,iii)=icon1(i,iii)
    65 continue
+   66 continue
       do 70 j=2,n
       if(itemx(j).le.2) go to 70
       if(itype(j).eq.1) go to 71
@@ -2115,18 +2192,22 @@ c
 c     pooling of categories of each explanatory variable in a
 c     multidimensional table in the case of 'ity(j)=0'
 c
-      do 106 i=1,n
+cxx      do 106 i=1,n
+      do 107 i=1,n
       do 106 l=1,2
       itemt(i,l)=itemx(i)
       if(l.eq.1.and.i.eq.j) itemt(i,l)=(itemx(i)+1)/2
       if(l.eq.2.and.i.eq.j) itemt(i,l)=itemx(i)/2+1
   106 continue
+  107 continue
       do 130 l=1,2
-      do 133 i=1,n
+cxx      do 133 i=1,n
+      do 134 i=1,n
       itemxx=itemz(1,i)
       do 133 iii=1,itemxx
       icon(i,iii)=icon1(i,iii)
   133 continue
+  134 continue
       itemxx=itemz(1,j)
       do 135 i=1,itemxx
       if(l.eq.1) icon(j,i)=(icon1(j,i)+1)/2
@@ -2148,7 +2229,7 @@ ccxx      if(aicm.lt.aic) go to 130
       if(aicm.lt.aic .and. daic.gt.eps01) go to 130
 
       aicm=aic
-      iko=ik2
+cxxd      iko=ik2
       jj=j
       ll=l
       do 150 i=1,n
@@ -2167,8 +2248,11 @@ ccxx      if(acmmm.lt.aic+1.d-10) go to 160
       lk5=lk2
       lk77=lk7
       do 170 i=1,lk5
-  170 lca(i)=lc(i)
-      do 155 i=1,lk77
+cxx  170 lca(i)=lc(i)
+      lca(i)=lc(i)
+  170 continue
+cxx      do 155 i=1,lk77
+      do 156 i=1,lk77
       aaa(i)=aa(i)
       icaa(i)=ica(i)
       nnia(i)=nni(i)
@@ -2177,6 +2261,7 @@ cc      do 155 ii=1,10
       do 155 ii=1,icaa(i)
       caa(i,ii)=ca(i,ii)
   155 continue
+  156 continue
 c <<<
       do 168 i=1,n
       itemx1=itemz(1,i)
@@ -2218,7 +2303,7 @@ cc     3          lk7,ikr,ikn,ikf,n,nsamp,iw(i20),nnn,in)
          if(daic.lt.eps01) go to 73
 
       aicm=aic
-      iko=ik2
+cxxd      iko=ik2
       jj=j
       ll=ii
       itemy(j)=itemxx
@@ -2231,8 +2316,11 @@ cc     3          lk7,ikr,ikn,ikf,n,nsamp,iw(i20),nnn,in)
       lk5=lk2
       lk77=lk7
       do 81 i=1,lk5
-   81 lca(i)=lc(i)
-      do 185 i=1,lk77
+cxx   81 lca(i)=lc(i)
+      lca(i)=lc(i)
+   81 continue
+cxx      do 185 i=1,lk77
+      do 186 i=1,lk77
       aaa(i)=aa(i)
       icaa(i)=ica(i)
       nnia(i)=nni(i)
@@ -2241,6 +2329,7 @@ cc      do 185 iii=1,10
       do 185 iii=1,icaa(i)
       caa(i,iii)=ca(i,iii)
   185 continue
+  186 continue
       do 88 i=1,n
       itemx1=itemz(1,i)
       do 82 iii=1,itemx1
@@ -2250,14 +2339,16 @@ cc      do 185 iii=1,10
    85 continue
    73 continue
       do 83 i=1,ikn
-   83 icon(j,i)=icon1(j,i)
+cxx   83 icon(j,i)=icon1(j,i)
+      icon(j,i)=icon1(j,i)
+   83 continue
    70 continue
 c
 c     keeping the categorization with a temporary maice
 c
       if(jj.eq.0) go to 275
       aicmm(kt)=aicm
-      ikk=iko
+cxxd      ikk=iko
       items(2,jj)=items(1,jj)
       items(1,jj)=itemy(jj)
       do 200 i=1,n
@@ -2343,7 +2434,7 @@ cc     1         aa,n,iw(i11),w(1),data,nsamp,ikr,ikn,ikf,lk7,nnn,in)
 
       if(aicmm(kt-1).le.aic.or.aicmm(kt).le.aic) go to 270
 ccxx      if(aic-aicmm(kt-1).gt.1.d-10.or.aic-aicmm(kt).gt.1.d-10)
-      if(aic-aicmm(kt-1).gt.epa01 .or. aic-aicmm(kt).gt.eps01)
+      if(aic-aicmm(kt-1).gt.eps01 .or. aic-aicmm(kt).gt.eps01)
      1 go to 270
       kt=kt+1
       aicmm(kt)=aic
@@ -2363,7 +2454,8 @@ ccxx      if(acmmm.lt.aic) go to 290
       lk5=lk2
       lk77=lk7
 cc      do 305 i=1,200
-      do 305 i=1,lk77
+cxx      do 305 i=1,lk77
+      do 306 i=1,lk77
       aaa(i)=aa(i)
       icaa(i)=ica(i)
       nnia(i)=nni(i)
@@ -2372,11 +2464,14 @@ cc      do 305 ii=1,10
       do 305 ii=1,icaa(i)
       caa(i,ii)=ca(i,ii)
   305 continue
-      do 300 i=1,n
+  306 continue
+cxx      do 300 i=1,n
+      do 301 i=1,n
       itemxx=itemz(1,i)
       do 300 iii=1,itemxx
       icon2(i,iii)=icon(i,iii)
   300 continue
+  301 continue
       do 320 i=1,n
       itemz(kt,i)=itemx(i)
   320 continue
@@ -2408,8 +2503,9 @@ cc      write(4,2028)
 cc      if(iii.ne.ktt) write(4,2035) iii-1
 cc      if(iii.eq.ktt) write(4,2036)
 cc      if(iii.eq.ktt) write(4,2029)
+
 cc      write(4,2027) (c(ix,1),ix=1,20)
-      iiii=iii-1
+cc      iiii=iii-1
 cc      if(iii.ne.ktt) write(4,2024) iiii
       lkt=0
       do 349 i=1,lk
@@ -2426,9 +2522,7 @@ c <<<
 c >>>
       do 342 ij=1,lk
       aminx=10.**10
-cxx      do 343 i=1,lk
-      if (lk.lt.2) go to 3430
-      do 343 i =2,lk
+      do 343 i=1,lk
       if(lg(i).ne.0) go to 343
       if(aminx.le.aaa(i)) go to 343
          daic=dabs(aminx-aaa(i))
@@ -2438,7 +2532,6 @@ cxx      do 343 i=1,lk
       aminx=aaa(i)
       lk3=i
   343 continue
- 3430    continue
       lg(lk3)=lk3
       lk4=icaa(lk3)
       if(lk4.ne.iii.and.iii.ne.ktt) go to 342
@@ -2468,7 +2561,8 @@ cc      aaa3=exp(-1./2.*aaa2)
       if(iij.eq.1.and.iii.eq.ktt.and.lk4.eq.1) lk5=0
       if(iij.gt.100) go to 344
 c <<<
-      if( iii.ne. ktt ) morder(ij)=lk3
+cx      if (iii.ne.ktt) morder(ij)=lk3
+      if (iii.eq.ktt) morder(iij)=lk3
 c >>>
 cc      if(lk4.ge.2) write(4,2018) iij,(cb(ix,2),ix=1,20),nnia(lk3),
 cc     1                           aaa(lk3),aaa2,aaa3
@@ -2479,6 +2573,7 @@ cc      if(lk4.lt.2) write(4,2018) iij,cz,nnia(lk3),aaa(lk3),aaa2,aaa3
   342 continue
   344 continue
 cc      write(4,2042)
+
   348 continue
 c
 c     printing out 'contingency table with the optimal combination
@@ -2586,7 +2681,7 @@ cc      if(ill.eq.2) write(4,2033) (it,it=ip1,ip2)
 cc      if(ill.eq.1) write(4,fm21) (mxx(5),i=2,lk6),(mxx(5),i=1,ncpr)
 cc      if(ill.eq.2) write(4,2001) (mxx(5),i=1,ncpr)
 cxx  455 do 460 i=1,kkj
-  455 continue
+cxx  455 continue
 cxx        if(kkj. gt. n33*n33*n33) go to 585
          if(kkj. gt. ikkk) go to 585
       do 460 i=1,kkj
@@ -2657,7 +2752,8 @@ cc      write(4,2002)
   440 continue
 cc      call aicp1(lk5,itemx,lc,aic,iw(i13),iw(i16),iw(i17),data,icon2,
 cc     2           w(j12),w(j13),ikr,ikn,ikf,n,nsamp,iw(i20),nnn,in)
-      call aicp10(lk5,itemx,lc,aic,data,icon2,ikr,ikn,n,nsamp,ier)
+cxx      call aicp10(lk5,itemx,lc,aic,data,icon2,ikr,ikn,n,nsamp,ier)
+      call aicp10(lk5,itemx,lc,aic,data,icon2,ikn,n,nsamp,ier)
       if( ier(1).ne.0 ) return
 
 cc      write(4,2045) aic
@@ -2709,7 +2805,7 @@ cc      if(itx.ne.1.or.xx(ijj).eq.0.) write(4,2040) ii,iaa(ijj,is)
 cc      if(itx.eq.1.and.xx(ijj).ne.0.) write(4,2041) ii,
 cc     &                                     ab(ijj,is),ab(ijj,ie)
 cxx  566 is=ie
-  566 continue
+cxx  566 continue
 c <<<
       if(itx.ne.1.or.xx(ijj).eq.0.) iabse(i,nint,ncount)=is
       if(itx.eq.1.and. xx(ijj).ne.0.) then
@@ -2791,13 +2887,13 @@ cc      write(4,*) 'err'
 cc      write(4,2017)
       return
 cc  570 write(4,2022) ialim,imax1,jalim,jmax1
-  570 continue
-         ier(1)=2022
+cxx  570 continue
+cxx         ier(1)=2022
 cc      close(1)
 cc      close(4)
 cc      close(in)
 cc      stop 10
-      return
+cxx      return
 c
   573 continue
          ier(1)=2003
@@ -2826,75 +2922,75 @@ cc      close(4)
 cc      close(in)
 cc      stop 10
       return
- 2001 format(15x,100a1)
- 2002 format(' ')
- 2003 format(' ')
- 2004 format(15x,'response variable   (',20a1,')')
- 2005 format('+',53('-'),'+'/
-     1       'i contingency table constructed by the best subset of i'/
-     2       'i explanatory variables                               i'/
-     3       '+',53('-'),'+')
- 2006 format(2a1,i1,2a1,20a1)
- 2007 format(1h+,28x,3(2a1,i1,2a1,20a1,2x)/
-     1       (28x,3(2a1,i1,2a1,20a1,2x)))
- 2008 format(1x,10a1,5x,'response variable')
- 2009 format(1h+,27x,' x(1) ')
- 2010 format(15x,20i5)
- 2011 format(24x,'    codes        class bound',
-     1'aries')
- 2012 format(1x,10i1)
- 2013 format(1h+,30x,20i5)
- 2014 format(1h+,30x,16f6.1)
- 2015 format(' total',10x,20i5)
- 2016 format(' total',10x,16f6.1)
- 2017 format(' ')
- 2018 format(i3,1x,(20a1,1x),i4,2x,f10.2,2x,f10.2,2x,f10.5)
- 2019 format((4x,(20a1,1x)))
- 2020 format(' x(',i1,'):',20a1,1x,i5,' : ',i5)
- 2021 format(' x(',i1,'):',20a1,1x,i5,' : ',d12.5,' - ',d12.5)
- 2022 format(' ia or a dimension over ',4i10)
- 2023 format(72('-'))
- 2024 format('number of explanatory variables = ',i5)
- 2026 format(67('-')/'           ', 11x,'number of   ',
-     1 2x,'     '/
-     2 4x,'explanatory',7x,'categories    ',10x,'difference'/
-     3 4x,'variables',9x,'of exp. var.',2x,'a i c',5x,'of aic',7x,
-     4 'weight'/67('-'))
- 2027 format(' response variable  : ',20a1/)
- 2028 format(72('=')//'+',62('-'),'+'/
-     1        'i aic''s of the models with k explanatory varia',
-     2        'bles (k=1,2,...) i'/'+',62('-'),'+')
- 2029 format('+',45('-'),'+'/
-     1       'i summary of subsets of explanatory variables i'/
-     2        '+', 45('-'),'+')
- 2030 format(///10x,'---------------        ----------------'
-     1         /10x,'---------------  note  ----------------'
-     2         /10x,'the simple minded choice of the explanatory ',
-     3                  'variables with'
-     3         /10x,'the minimum of aic may not ',
-     4                  'produce the best result. '
-     5         /10x,'rather it is recommended to observe the ',
-     6                  'general behavior of aic''s.'
-     7         /10x,'---------------  note  ----------------'
-     8         /10x,'---------------        ----------------')
- 2031 format(1h ,15x,20a1)
- 2032 format(1h+,10x,' - - -')
- 2033 format(15x,16i6)
- 2034 format(' < note > ')
- 2035 format(/'<5',i1,'>')
- 2036 format(/'<5>')
- 2037 format(72('=')//'<6>')
- 2040 format(27x,i5,' : ',i5)
- 2041 format(27x,i5,' : ',d12.5,' - ',d12.5)
- 2042 format(67('-'))
- 2043 format(72('+'))
- 2044 format(/'<7',i1,'>')
- 2045 format(/'a i c =',f10.2/)
- 2046 format(/'<7',i2,'>')
- 2047 format('+---------------------------------------+'/
-     1       'i the output of the additional analysis i'/
-     2       '+---------------------------------------+')
- 2048 format(' ikkk over  ',2i10)
+cc 2001 format(15x,100a1)
+cc 2002 format(' ')
+cc 2003 format(' ')
+cc 2004 format(15x,'response variable   (',20a1,')')
+cc 2005 format('+',53('-'),'+'/
+cc     1       'i contingency table constructed by the best subset of i'/
+cc     2       'i explanatory variables                               i'/
+cc     3       '+',53('-'),'+')
+cc 2006 format(2a1,i1,2a1,20a1)
+cc 2007 format(1h+,28x,3(2a1,i1,2a1,20a1,2x)/
+cc     1       (28x,3(2a1,i1,2a1,20a1,2x)))
+cc 2008 format(1x,10a1,5x,'response variable')
+cc 2009 format(1h+,27x,' x(1) ')
+cc 2010 format(15x,20i5)
+cc 2011 format(24x,'    codes        class bound',
+cc     1'aries')
+cc 2012 format(1x,10i1)
+cc 2013 format(1h+,30x,20i5)
+cc 2014 format(1h+,30x,16f6.1)
+cc 2015 format(' total',10x,20i5)
+cc 2016 format(' total',10x,16f6.1)
+cc 2017 format(' ')
+cc 2018 format(i3,1x,(20a1,1x),i4,2x,f10.2,2x,f10.2,2x,f10.5)
+cc 2019 format((4x,(20a1,1x)))
+cc 2020 format(' x(',i1,'):',20a1,1x,i5,' : ',i5)
+cc 2021 format(' x(',i1,'):',20a1,1x,i5,' : ',d12.5,' - ',d12.5)
+cc 2022 format(' ia or a dimension over ',4i10)
+cc 2023 format(72('-'))
+cc 2024 format('number of explanatory variables = ',i5)
+cc 2026 format(67('-')/'           ', 11x,'number of   ',
+cc     1 2x,'     '/
+cc     2 4x,'explanatory',7x,'categories    ',10x,'difference'/
+cc     3 4x,'variables',9x,'of exp. var.',2x,'a i c',5x,'of aic',7x,
+cc     4 'weight'/67('-'))
+cc 2027 format(' response variable  : ',20a1/)
+cc 2028 format(72('=')//'+',62('-'),'+'/
+cc     1        'i aic''s of the models with k explanatory varia',
+cc     2        'bles (k=1,2,...) i'/'+',62('-'),'+')
+cc 2029 format('+',45('-'),'+'/
+cc     1       'i summary of subsets of explanatory variables i'/
+cc     2        '+', 45('-'),'+')
+cc 2030 format(///10x,'---------------        ----------------'
+cc     1         /10x,'---------------  note  ----------------'
+cc     2         /10x,'the simple minded choice of the explanatory ',
+cc     3                  'variables with'
+cc     3         /10x,'the minimum of aic may not ',
+cc     4                  'produce the best result. '
+cc     5         /10x,'rather it is recommended to observe the ',
+cc     6                  'general behavior of aic''s.'
+cc     7         /10x,'---------------  note  ----------------'
+cc     8         /10x,'---------------        ----------------')
+cc 2031 format(1h ,15x,20a1)
+cc 2032 format(1h+,10x,' - - -')
+cc 2033 format(15x,16i6)
+cc 2034 format(' < note > ')
+cc 2035 format(/'<5',i1,'>')
+cc 2036 format(/'<5>')
+cc 2037 format(72('=')//'<6>')
+cc 2040 format(27x,i5,' : ',i5)
+cc 2041 format(27x,i5,' : ',d12.5,' - ',d12.5)
+cc 2042 format(67('-'))
+cc 2043 format(72('+'))
+cc 2044 format(/'<7',i1,'>')
+cc 2045 format(/'a i c =',f10.2/)
+cc 2046 format(/'<7',i2,'>')
+cc 2047 format('+---------------------------------------+'/
+cc     1       'i the output of the additional analysis i'/
+cc     2       '+---------------------------------------+')
+cc 2048 format(' ikkk over  ',2i10)
       end
 cc      subroutine aicp(k,idf,lc,lk2,aicc,ld,le,lb,ni,l1,l2,ly,lp,c,
 cc     1                cb,lz,ca,ica,nni,data,icon,am,acmm,bic,ac,aa,
@@ -2906,14 +3002,23 @@ c     this subroutine provides various combinations of explanatory
 c     variables to compute the corresponding aic's.   this is almost
 c     the same as the subroutine 'aicm'.
 c
-      implicit real*8(a-h,o-z)
+cxx      implicit real*8(a-h,o-z)
 cc      integer *2 lc,ld,le,lb,idf,l1,l2,lp,ly,c,cb,lz,ni,ca,ica,iw,
 cc     1           nni,data,icon,nnmm
-      integer c,cb,ca,data
-      dimension lc(n),ld(n,n),am(n),acmm(n),le(n,n),bic(n),
-     1          lb(n),ni(n),idf(n),l1(n),l2(n),ly(2,n),lp(2),ac(n),
-     2          lz(n),aa(ikr),icon(n,ikn),
-     3          ca(ikr,jkr),ica(ikr),nni(ikr),data(nsamp,n),ier(2)
+cxx      integer c,cb,ca,data
+cxx      dimension lc(n),ld(n,n),am(n),acmm(n),le(n,n),bic(n),
+cxx     1          lb(n),ni(n),idf(n),l1(n),l2(n),ly(2,n),lp(2),ac(n),
+cxx     2          lz(n),aa(ikr),icon(n,ikn),
+cxx     3          ca(ikr,jkr),ica(ikr),nni(ikr),data(nsamp,n),ier(2)
+      integer :: k, idf(n), lc(n), lk2, ca(ikr,jkr), ica(ikr), nni(ikr),
+     1           data(nsamp,n), icon(n,ikn), lk7, ikr, jkr, ikn, n,
+     2           nsamp, ier(2)
+      real(8) :: aicc, aa(ikr), eps01
+c
+      integer :: ld(n,n), le(n,n), lb(n), ni(n),l 1(n), l2(n), ly(2,n),
+     1           lp(2), lz(n)
+      real(8) :: am(n), acmm(n), bic(n), ac(n), ax, amin, aminx,
+     1          amin2, ddd, daic
 cc      common ialim,imax,jalim,jmax,imaxx,jmaxx
 c
       lk7=0
@@ -2938,9 +3043,10 @@ cc      imax=imax1
       kk=k
       lk4=1
    30 continue
-      do 31 i=1,2
-      do 31 j=1,n
-   31 ly(i,j)=0
+cxx      do 31 i=1,2
+cxx      do 31 j=1,n
+cxx   31 ly(i,j)=0
+      ly(1:2,1:n)=0
       ly(1,1)=1
       lp(1)=1
       if(lk.ne.0) go to 45
@@ -3000,7 +3106,9 @@ c-----
       if(lk.eq.0) go to 66
          if((lk+1).gt.jkr) go to 900
       do 67 l=1,lk
-   67 ca(lk4,l+1)=lb(l)
+cxx   67 ca(lk4,l+1)=lb(l)
+      ca(lk4,l+1)=lb(l)
+   67 continue
          if((lk+2).gt.jkr) go to 900
    66 ca(lk4,lk+2)=l1(i)
       ica(lk4)=lk+2
@@ -3088,7 +3196,9 @@ c-----
       ica(lk4)=lk1+1
          if((lk1+1).gt.jkr) go to 910
       do 215 j=1,lk1
-  215 ca(lk4,j+1)=lc(j)
+cxx  215 ca(lk4,j+1)=lc(j)
+      ca(lk4,j+1)=lc(j)
+  215 continue
       ca(lk4,1)=l1(1)
   190 continue
       aminx=amin
@@ -3151,12 +3261,12 @@ cxx  320 continue
   270 continue
       return
 cc  330 write(4,2001) ialim,imax1,jalim,jmax1
-  330 ier(1)=2001
+cxx  330 ier(1)=2001
 cc      close(1)
 cc      close(4)
 cc      close(in)
 cc      stop 10
-      return
+cxx      return
 cc  340 write(4,2002) lk4,ikr
   340 continue
          ier(1)=2002
@@ -3175,8 +3285,8 @@ cc      close(4)
 cc      close(in)
 cc      stop 10
       return
- 2001 format(' ia or a dimension over ',4i10)
- 2002 format(' ikr over ',2i10)
+cxx 2001 format(' ia or a dimension over ',4i10)
+cxx 2002 format(' ikr over ',2i10)
       end
       subroutine bun0(icon,ias1,jj,aic,itemt,ii,itemx,lk5,ca,ica,
 cc     1               nni,c,aa,n,iw,w,data,nsamp,ikr,ikn,ikf,lk77,nnn,in)
@@ -3186,13 +3296,21 @@ c     this subroutine re-divides the pooled categories of an
 c     explanatory variable in a multidimensional table to search for
 c     the maice.
 c
-      implicit real*8(a-h,o-z)
+cxx      implicit real*8(a-h,o-z)
 cc      integer*2 itemx,ias1,icon,lc,itemt,c,ca,ica,nni,data,iw
-      integer ca,data
-      dimension icon(n,20),ias1(2,n,20),itemx(n),data(nsamp,n),lc(n),
+cxx      integer ca,data
+cxx      dimension icon(n,20),ias1(2,n,20),itemx(n),data(nsamp,n),lc(n),
 cc     1          c(10,n),ca(ikr,10),ica(ikr),nni(ikr),aa(ikr),itemt(2,n),
-     1           ca(ikr,jkr),ica(ikr),nni(ikr),aa(ikr),itemt(2,n)
-      dimension ier(2)
+cxx     1           ca(ikr,jkr),ica(ikr),nni(ikr),aa(ikr),itemt(2,n)
+cxx      dimension ier(2)
+      integer :: icon(n,20), ias1(2,n,20), jj, itemt(2,n), ii, itemx(n),
+     1           lk5, ca(ikr,jkr), ica(ikr), nni(ikr), n, data(nsamp,n), 
+     2           nsamp, ikr, jkr, ikn, lk77, ier(2)
+      real(8) :: aic, aa(ikr), eps01
+c
+      integer :: lc(n)
+      real(8) :: aic1, daic
+c
 cc     3          iw(nnn),w(1)
 cc      common ialim,imax,jalim,jmax,imaxx,jmaxx
 cc      i11=1+n*n
@@ -3284,18 +3402,28 @@ c
 c     this subroutine computes aic values for a (multidimensional)
 c     contingency table.
 c
-      implicit real*8 (a-h,o-z)
+cxx      implicit real*8 (a-h,o-z)
 cc      integer*2 ia,idf,lp,ly,ni,data,idt,idd,id1,icon,tc,tr
-      integer data,tc,tr
-      dimension idt(n),idd(n),id1(2),ia(ikf,2),idf(n),lp(2),ly(2,n),
-     1          data(nsamp,n),icon(n,ikn),tc(ikf),tr(ikf),ier(2)
+cxx      integer data,tc,tr
+cxx      dimension idt(n),idd(n),id1(2),ia(ikf,2),idf(n),lp(2),ly(2,n),
+cxx     1          data(nsamp,n),icon(n,ikn),tc(ikf),tr(ikf),ier(2)
+      integer :: idf(n), l, ni, ly(2,n), lp(2), data(nsamp,n),
+     1           icon(n,ikn), nsamp, n, ikf, ikn, ier(2)
+      real(8) :: ac, bc
+c
+      integer :: idt(n), idd(n), id1(2), ia(ikf,2), tc(ikf), tr(ikf)
+      real(8) :: expo, t, t1, aaa, a, c
+c
       t=nsamp
       expo=exp(-1.)
-      do 10 i=1,ikf
-      tc(i)=0
-      tr(i)=0
-      do 10 j=1,2
-   10 ia(i,j)=0
+cxx      do 10 i=1,ikf
+cxx      tc(i)=0
+cxx      tr(i)=0
+cxx      do 10 j=1,2
+cxx   10 ia(i,j)=0
+      tc(1:ikf)=0
+      tr(1:ikf)=0
+      ia(1:ikf,1:2)=0
       iaa=1
       lpp=lp(1)
       do 15 i=1,lpp
@@ -3337,7 +3465,8 @@ cc      integer*2 ia,idf,lp,ly,ni,data,idt,idd,id1,icon,tc,tr
       id=data(i,ii3)
       tc(id)=tc(id)+1
    20 continue
-      do 70 i=1,l
+cxx      do 70 i=1,l
+      do 71 i=1,l
       id1(i)=1
       lpp=lp(i)
       if(lpp.eq.0) go to 80
@@ -3345,6 +3474,7 @@ cc      integer*2 ia,idf,lp,ly,ni,data,idt,idd,id1,icon,tc,tr
       lyy=ly(i,j)
       id1(i)=id1(i)*idf(lyy)
    70 continue
+   71 continue
    80 continue
       ic0=0
       idf1=idf(1)
@@ -3403,6 +3533,9 @@ c >>>
       if(kk2.eq.0) kk2=idf(1)
       if(tc(kk2).eq.0) go to 110
   115 continue
+c-----   modified by M.I.
+      if(aaa.eq.0.) aaa=expo
+c-----
       a=aaa*log(aaa/(t+t1))+a
   110 continue
       if(j.eq.1.and.l.eq.1) i61=(idf(1)-ic0)-1
@@ -3425,14 +3558,18 @@ c >>>
       if(ia(ii,1).eq.0) aaa=aaa+expo
       aaa=aaa+ia(ii,1)
   140 continue
-      a=aaa*log(aaa/(t+t1))+a
+CM.I      a=aaa*log(aaa/(t+t1))+a
+CM.I#ifdef MAICEDEBUG
+      if(aaa .gt. 0.d0) a=aaa*log(aaa/(t+t1))+a
+CM.I#endif
   130 continue
       c=c-a
       i61=kkk-ic0-1
       ip=ip-i61
       ni=id1(2)
       if(l.eq.1) ni=0
-      ac  = -2*(c-ip)
+cxx      ac = -2*(c-ip)
+      ac = -2.0d0*(c-dble(ip))
       bc = ac
       return
 cc  120 write(4,2001) iaa,ikf
@@ -3442,22 +3579,30 @@ cc  120 write(4,2001) iaa,ikf
 cc      close(1)
 cc      close(4)
 cc      close(in)
- 2001 format(' dimension over ia ' ,2i10)
+cxx 2001 format(' dimension over ia ' ,2i10)
 cc      stop 10
       return
       end
 cc      subroutine aicp1(k,idf,lc,aicc,ni,ly,lp,data,icon,bic,ac,
 cc     1                ikr,ikn,ikf,n,nsamp,iw,nnn,in)
-      subroutine aicp10(k,idf,lc,aicc,data,icon,ikr,ikn,n,nsamp,ier)
+cxx      subroutine aicp10(k,idf,lc,aicc,data,icon,ikr,ikn,n,nsamp,ier)
+      subroutine aicp10(k,idf,lc,aicc,data,icon,ikn,n,nsamp,ier)
 c
 c     this subroutine computes the value of aic for the output <7>.
 c
-      implicit real*8(a-h,o-z)
+cxx      implicit real*8(a-h,o-z)
 cc      integer *2 lc,idf,lp,ly,ni,iw,data,icon
-      integer data
-      dimension lc(n),bic(n),ni(n),idf(n),ly(2,n),lp(2),ac(n),
+cxx      integer data
+cxx      dimension lc(n),bic(n),ni(n),idf(n),ly(2,n),lp(2),ac(n),
 cc     1          icon(n,ikn),iw(nnn),data(nsamp,n)
-     1          icon(n,ikn),data(nsamp,n),ier(2)
+cxx     1          icon(n,ikn),data(nsamp,n),ier(2)
+      integer :: k, idf(n), lc(n), data(nsamp,n), icon(n,ikn),
+     1           ikn, n, nsamp, ier(2)
+      real(8) :: aicc
+c
+      integer :: ni(n), ly(2,n), lp(2)
+      real(8) :: bic(n), ac(n)
+c
 cc      common ialim,imax,jalim,jmax,imaxx,jmaxx
 cc      i11=1+n
 cc      i12=i11+n
@@ -3472,9 +3617,14 @@ cc      if(imax1.gt.imaxx) imaxx=imax1
 cc      imax=imax1
 cc      lk4=1
 cc   30 continue
-      do 31 i=1,2
-      do 31 j=1,n
-   31 ly(i,j)=0
+c<<<
+      aicc=0
+      if (k .eq. 0) return
+c>>>>
+cxx      do 31 i=1,2
+cxx      do 31 j=1,n
+cxx   31 ly(i,j)=0
+      ly(1:2,1:n)=0
       ly(1,1)=1
       lp(1)=1
       lk3=2
@@ -3528,13 +3678,22 @@ c     this subroutine searches for maice within the possible ways of
 c     categorization of a single explanatory variable in cace
 c     'ity(k)=1'.
 c
-      implicit real*8(a-h,o-z)
+cxx      implicit real*8(a-h,o-z)
 cc      integer*2 nd,lc,lcc,knn,lb,total,lcy,lj,totalc,iw
-      integer total,totalc
-      dimension a(n11,n33),a1(n11,n33),total(n33),totl(n33),tttr(n33),
-     1          nd(n33),lc(n33),lcc(n33),lcy(10,n33),aa(n33),lj(10),
+cxx      integer total,totalc
+cxx      dimension a(n11,n33),a1(n11,n33),total(n33),totl(n33),tttr(n33),
+cxx     1          nd(n33),lc(n33),lcc(n33),lcy(10,n33),aa(n33),lj(10),
 cc     2          knn(n33),lb(n33),iw(1),w(1),totalc(n11)
-     2          knn(n33),lb(n33),totalc(n11)
+cxx     2          knn(n33),lb(n33),totalc(n11)
+      integer :: ii, total(n33), jx, lc(n33), lcc(n33), lcy(10,n33),
+     1           lj(10), knn(n33), kk5, kk2, n11, n33,
+     2           totalc(n11)
+      real(8) :: a(n11,n33), a1(n11,n33), totl(n33), tttr(n33), aa(n33),
+     1           am, eps01
+c
+      integer :: nd(n33), lb(n33)
+      real(8) :: expo, al, samp, tsmp, tt, aaa, aic, aicmi, aicmm, daic
+c
 cc      common ialim,imax,jalim,jmax,imaxx,jmaxx
 c
 c     substituting exp(-1.0) for zero frequency
@@ -3576,10 +3735,14 @@ c
    21 continue
       ii0=ii
       do 22 i=1,ii
-   22 if(totalc(i).eq.0) ii0=ii0-1
+cxx   22 if(totalc(i).eq.0) ii0=ii0-1
+      if(totalc(i).eq.0) ii0=ii0-1
+   22 continue
       jj0=jj
       do 23 j=1,jj
-   23 if(total(j).eq.0) jj0=jj0-1
+cxx   23 if(total(j).eq.0) jj0=jj0-1
+      if(total(j).eq.0) jj0=jj0-1
+   23 continue
       lj(1)=1
 c     in=ii*jj-jj-ii+1
       in=ii0*jj0-jj0-ii0+1
@@ -3612,17 +3775,21 @@ c
       do 80 j2=1,jj
       totl(j2)=0.
    80 continue
-      do 90 j2=1,jj
+cxx      do 90 j2=1,jj
+      do 92 j2=1,jj
       j3=lcc(j2)
       do 100 m=1,ii
       a1(m,j2)=0.
   100 continue
-      do 90 j4=1,j3
+cxx      do 90 j4=1,j3
+      do 91 j4=1,j3
       j1=j1+1
       totl(j2)=totl(j2)+total(j1)
       do 90 m=1,ii
       a1(m,j2)=a1(m,j2)+a(m,j1)
    90 continue
+   91 continue
+   92 continue
       tsmp=0.0
       do 111 j2=1,jj
       if(totl(j2).eq.0.) go to 111
@@ -3651,7 +3818,9 @@ c
   120 continue
       jj0=jj
       do 123 j2=1,jj
-  123 if(totl(j2).eq.0) jj0=jj0-1
+cxx  123 if(totl(j2).eq.0) jj0=jj0-1
+      if(totl(j2).eq.0) jj0=jj0-1
+  123 continue
       in=ii0*jj0-jj0-ii0+1
       aic=-2.*(al-in)
 ccxx      if(aicmi.lt.aic) go to 60
@@ -3763,7 +3932,7 @@ cc      close(1)
 cc      close(4)
 cc      close(in)
 cc      stop 10
- 2001 format(' ia or a dimension over ',4i10)
+cxx 2001 format(' ia or a dimension over ',4i10)
       end
 cc      subroutine yy(a,lc,iix,aicmi,jj,total,ii,k1,lcc,lb,a1,totl,tttr,
 cc     1              n11,n33,totalc)
@@ -3772,16 +3941,24 @@ c
 c     this subroutine divides the pooled categories of an explanatory
 c     variable and computes the corresponding aic.
 c
-      implicit real*8(a-h,o-z)
+cxx      implicit real*8(a-h,o-z)
 cc      integer*2 lc,lcc,lb,total,totalc
-      integer total,totalc
-      dimension a(n11,n33),a1(n11,n33),total(n33),totl(n33),lc(n33),
-     1          lcc(n33),lb(n33),tttr(n33),totalc(n11)
+cxx      integer total,totalc
+cxx      dimension a(n11,n33),a1(n11,n33),total(n33),totl(n33),lc(n33),
+cxx     1          lcc(n33),lb(n33),tttr(n33),totalc(n11)
+      integer :: lc(n33), iix, jj, total(n33), ii, k1, n11, n33,
+     1           totalc(n11)
+      real(8) :: a(n11,n33), aicmi, eps01
+c
+      integer :: lcc(n33), lb(n33)
+      real(8) :: a1(n11,n33), totl(n33), tttr(n33), amin, tsmp, samp,
+     1           expo, tt, aaa, al, aic, daic, ac
+c
       amin=10.**10
 c <<<
       k2=k1
 c >>>
-      ix=lc (iix)
+      ix=lc(iix)
       ix1=iix-1
       ix2=iix+1
       if(ix1.eq.0) go to 10
@@ -3800,18 +3977,22 @@ c >>>
       lcc(iix+1)=ix-j
       jj=k1+1
       j1=0
-      do 50 j2=1,jj
+cxx      do 50 j2=1,jj
+      do 52 j2=1,jj
       totl(j2)=0.
       j3=lcc(j2)
       do 60 m=1,ii
       a1(m,j2)=0.
    60 continue
-      do 50 j4=1,j3
+cxx      do 50 j4=1,j3
+      do 51 j4=1,j3
       j1=j1+1
       totl(j2)=totl(j2)+total(j1)
       do 50 m=1,ii
       a1(m,j2)=a1(m,j2)+a(m,j1)
    50 continue
+   51 continue
+   52 continue
       expo=exp(-1.)
       tsmp=0.0
       samp=0.0
@@ -3843,10 +4024,14 @@ c >>>
    80 continue
       ii0=ii
       do 81 m=1,ii
-   81 if(totalc(m).eq.0) ii0=ii0-1
+cxx   81 if(totalc(m).eq.0) ii0=ii0-1
+      if(totalc(m).eq.0) ii0=ii0-1
+   81 continue
       jj0=jj
       do 82 j2=1,jj
-   82 if(totl(j2).eq.0.) jj0=jj0-1
+cxx   82 if(totl(j2).eq.0.) jj0=jj0-1
+      if(totl(j2).eq.0.) jj0=jj0-1
+   82 continue
       in=ii0*jj0-jj0-ii0+1
       ac=-2.*(al-in)
       aic=ac
@@ -3876,8 +4061,11 @@ c >>>
       subroutine eqck(caa,ikr,lk4,lk3,lk33,ijk)
 cc      integer *2 caa,ca1,ca2,ca11,ca22
 cc      dimension caa(ikr,10),ca1(10),ca2(10)
-      integer caa,ca1,ca2,ca11,ca22
-      dimension caa(ikr,lk4),ca1(lk4),ca2(lk4)
+cxx      integer caa,ca1,ca2,ca11,ca22
+cxx      dimension caa(ikr,lk4),ca1(lk4),ca2(lk4)
+      integer :: caa(ikr,lk4), ikr, lk4, lk3, lk33, ijk
+      integer :: ca1(lk4), ca2(lk4), ca11, ca22
+c
       ijk=0
       do 10 i=1,lk4
       ca1(i)=caa(lk3,i)

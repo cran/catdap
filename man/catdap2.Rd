@@ -117,7 +117,13 @@ catdap2(HealthData, c(2, 2, 2, 0, 0, 0, 0, 2), "symptoms",
 # Edgar Anderson's Iris Data
 # "Sepal.Length" "Sepal.Width"  "Petal.Length" "Petal.Width"  "Species" 
 data(iris)  
-catdap2(iris, c(0,0,0,-7,2), "Petal.Width", c(0.1, 0.1, 0.1, 0.1, 0))
+resvar <- "Petal.Width"
+z <- catdap2(iris, c(0, 0, 0, -7, 2), resvar, c(0.1, 0.1, 0.1, 0.1, 0))
+z
+
+vname <- names(iris)
+exvar <- c("Sepal.Length", "Petal.Length")
+Barplot2WayTable(vname, resvar, exvar, z$tway.table, z$interval)
 
 # Example 3  (in the case of a large number of variables)
 data(HelloGoodbye)

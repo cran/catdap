@@ -233,7 +233,7 @@ cc     1                FMT,N2,N4,ITEM1,ITEM2,ICONV,FACE,FACE2,TITLE,
 cc     2                ISKIP,ITEM,IDATA,TOTALR,TOTALC,HYO,HY,IZ,NNK,IMX,
 cc     3                IDF,IDF1,NO1,IA,INDE,MIN,AMIN,TPAR,P,PT,AIC1,AIC2,
 cc     4                AIC3,AIMIN,TCC,IW,NNN)
-      IMPLICIT REAL*8(A-H,O-Z)
+cxx      IMPLICIT REAL*8(A-H,O-Z)
 cc      INTEGER * 2 ITEM,ITEM1,ITEM2,IDATA,TOTALR,TOTALC,FACE,FACE2,IMX,
 cc     1            TITLE,ICONV,HYO,HY,INDE,IZ,NNK,IDF,IDF1,NO1,IA,MIN,
 cc     2            ISKIP,IW
@@ -246,14 +246,25 @@ cc     3          INDE(N),MIN(N),FAA(5),FAC(10),IDF(N),AIMIN(N,N),
 cc     4          FMT(100),FM1(7),FM2(11),FM3(7),FM4(11),FM5(7),IDF1(N),
 cc     5          AMIN(N),TPAR(N4),P(N4,N4),PT(N4),FAD(3),TCC(N2),
 cc     6          AIC1(N),AIC2(N),AIC3(N),ISKIP(20,ISKIP1),IW(NNN)
-      INTEGER     RECODE,FACE,FACE2,TOTALR,TOTALC,ORD
-      DIMENSION ITEM1(N),ITEM2(N),ICONV(20,RECODE),FACE(L),
-     1          FACE2(N1+1),ISKIP(20,ISKIP1),IDATA(N,NSAMP),ITEM(N),
-     2          IA(N4,N4,L,N),TOTALR(N4,N),TOTALC(N4,L),P(N4,N4,L,N),
-     3          TPAR(N4,N),PT(N4,L),AIMIN(L,N),ORD(L,N-1)
-C
-      INTEGER     IDF1,MIN
-      DIMENSION MIN(N),AMIN(N),IDF1(N),TCC(N4),AIC1(N),AIC2(N),AIC3(N)
+cxx      INTEGER     RECODE,FACE,FACE2,TOTALR,TOTALC,ORD
+cxx      INTEGER     RECODE
+cxx      DIMENSION ITEM1(N),ITEM2(N),ICONV(20,RECODE),FACE(L),
+cxx     1          FACE2(N1+1),ISKIP(20,ISKIP1),IDATA(N,NSAMP),ITEM(N),
+cxx     2          IA(N4,N4,L,N),TOTALR(N4,N),TOTALC(N4,L),P(N4,N4,L,N),
+cxx     3          TPAR(N4,N),PT(N4,L),AIMIN(L,N),ORD(L,N-1)
+      INTEGER :: NSAMP, N, L, N1, RECODE, ISKIP1, N4,
+     1              ITEM1(N), ITEM2(N), ICONV(20,RECODE), 
+     2              FACE(L), FACE2(N1+1), ISKIP(20,ISKIP1),
+     3              IDATA(N,NSAMP), ITEM(N), IA(N4,N4,L,N),
+     4              TOTALR(N4,N), ORD(L,N-1)
+      REAL(8) :: P(N4,N4,L,N), AIMIN(L,N)
+CXX      INTEGER     IDF1,MIN
+cxx      DIMENSION MIN(N),AMIN(N),IDF1(N),TCC(N4),AIC1(N),AIC2(N),AIC3(N)
+      INTEGER :: TOTALC(N4,L), MIN(N), IDF1(N)
+      REAL(8) :: AMIN(N), TCC(N4), AIC1(N), AIC2(N), AIC3(N),
+     1             TPAR(N4,N), PT(N4,L),
+     2             SA, AMINN, AMMIN, AS, PTT, TC
+c
 cc      DATA FM1/'(1H+',',60X',',12I','6,6X',4H,'TO,4HTAL',')'/,
 cc     1     FM2/', 1I',', 2I',', 3I',', 4I',', 5I',', 6I',', 7I',', 8I',
 cc     2         ', 9I',',10I',',11I'/
@@ -289,22 +300,24 @@ cc      TOTALR(J)=0
 cc      TOTALC(J)=0
 cc      DO 70 I=1,N2
 cc   70 IA(I,J)=0
-      DO 71 I1=1,N4
-      DO 71 I=1,L
-   71 TOTALC(I1,I)=0
-   
-      DO 70 J1=1,N4
-      DO 70 J=1,N
-   70 TOTALR(J1,J)=0
-   
-      DO 80 I=1,L
+cxx      DO 71 I1=1,N4
+cxx      DO 71 I=1,L
+cxx   71 TOTALC(I1,I)=0
+      TOTALC(1:N4,1:L)=0
+cxx      DO 70 J1=1,N4
+cxx      DO 70 J=1,N
+cxx   70 TOTALR(J1,J)=0
+      TOTALR(1:N4,1:N)=0   
+cxx      DO 80 I=1,L
 cc      DO 80 J=1,N
-      DO 80 J=1,N
-      DO 75 I1=1,N4
-      DO 75 J1=1,N4
-   75 IA(I1,J1,I,J)=0
-      AIMIN(I,J)=0.
-   80 CONTINUE
+cxx      DO 80 J=1,N
+cxx      DO 75 I1=1,N4
+cxx      DO 75 J1=1,N4
+cxx   75 IA(I1,J1,I,J)=0
+cxx      AIMIN(I,J)=0.
+cxx   80 CONTINUE
+      IA(1:N4,1:N4,1:L,1:N)=0
+      AIMIN(1:L,1:N)=0.
 C
 C     SKIP TO DATA REQUIRED
 C
@@ -406,7 +419,9 @@ C
       MIN(K)=0
       AIC1(K)=0.0
       AIC3(K)=0.0
-  380 AIC2(K)=0.0
+cxx  380 AIC2(K)=0.0
+      AIC2(K)=0.0
+  380 CONTINUE
 c <<<
       MIN(NL)=I3
       AIC3(I3)=1.D10
@@ -428,7 +443,8 @@ cc      NO1(K21)=J1
       IF(K.EQ.I3)GO TO 400
 cc      K=K21
       TSMP=0.
-      DO 410 J=J1,J2
+cxx      DO 410 J=J1,J2
+      DO 411 J=J1,J2
       TCC(J)=0.
       DO 410 I=I1,I2
 cc      IF(IA(I,J).EQ.0) TSMP=TSMP+0.5
@@ -436,7 +452,9 @@ cc      IF(IA(I,J).EQ.0) TCC(J)=TCC(J)+0.5
       IF(IA(I,J,IK,K).EQ.0) TSMP=TSMP+exp(-1.)
       IF(IA(I,J,IK,K).EQ.0) TCC(J)=TCC(J)+exp(-1.)
   410 CONTINUE
-      DO 420 I=I1,I2
+  411 CONTINUE
+cxx      DO 420 I=I1,I2
+      DO 421 I=I1,I2
       TR=0. 
       DO 430 J=J1,J2
 cc      IF(IA(I,J).EQ.0) TR=TR+0.5
@@ -456,6 +474,7 @@ cx      IF(IA(I,J,IK,K).EQ.0) AAA=0.5
       AIC1(K)=AIC1(K)+
      &        AAA*LOG(AAA/(TT*(TOTALR(J,K)+TCC(J)))*(SAMP+TSMP))
   420 CONTINUE
+  421 CONTINUE
       DO 440 J=J1,J2
 cc      IF(TOTALR(J).EQ.0) GO TO 440
 cc      AIC2(K)=AIC2(K)+(TOTALR(J)+TCC(J))*(LOG((TOTALR(J)+TCC(J))/
@@ -536,7 +555,7 @@ cc      WRITE(6,1014)
       DO 540 K2=1,N
       I4=MIN(K2)
       I=I4
-  560 CONTINUE
+cc  560 CONTINUE
       AMMIN=AMIN(K2)
       IF(AMMIN.EQ.1.D10) AMIN(K2)=0.0
 cc      IF(IEXP.NE.1) AIMIN(IK,I)=AMIN(K2)
@@ -579,7 +598,9 @@ c <<<
 cc      PT(II)=TOTALC(I)/SAMP*100.0
 cc  600 PTT=PTT+PT(II)
       PT(II,IK)=TOTALC(I,IK)/SAMP*100.0
-  600 PTT=PTT+PT(II,IK)
+CXX  600 PTT=PTT+PT(II,IK)
+      PTT=PTT+PT(II,IK)
+  600 continue
 c >>>
 C
       DO 580 J=J1,J2
@@ -595,8 +616,12 @@ cc      P(II,JJ)=IA(I,J)*TP
 cc  590 TC=TC+P(II,JJ)
 cc  580 TPAR(JJ)=TC
       P(I,J,IK,NV)=IA(I,J,IK,NV)*TP
-  590 TC=TC+P(I,J,IK,NV)
-  580 TPAR(J,NV)=TC
+cxx  590 TC=TC+P(I,J,IK,NV)
+      TC=TC+P(I,J,IK,NV)
+  590 CONTINUE
+CXX  580 TPAR(J,NV)=TC
+      TPAR(J,NV)=TC
+  580 CONTINUE
 C
 c-------
 cx      PTT=0
@@ -696,26 +721,26 @@ cc      L=LA
 cc      N=NA
 cc      WRITE(6,1010)
 cc  320 CONTINUE
- 1001 FORMAT(20I4)
- 1002 FORMAT(1H1/1H ,'  LIST OF EXPLANATORY VARIABLES ARRANGED IN',
-     1        ' ASCENDING ORDER OF AIC'//1H ,'RESPONSE VARIABLE  : '
-     2        ,'(',10A1,')'/)
- 1003 FORMAT(1H ,I5,10X,10A1,21X,I5,10X,F10.2,5X,F10.2)
- 1004 FORMAT(1H0,'(',10A1,')',42X,'(',10A1,')')
- 1005 FORMAT(//1H ,5X,'(',10A1,')',42X,'(',10A1,')')
- 1006 FORMAT(1H0,9X,12I4)
- 1007 FORMAT(1H ,I6,3X,12I4)
- 1008 FORMAT(1H ,3X,'TOTAL',1X,12I4)
- 1009 FORMAT(///)
- 1010 FORMAT(1H1)
- 1011 FORMAT(1H+,'EXPLANATORY '/1H ,'VARIABLES'/)
- 1012 FORMAT(1H ,14X, 9(1X,10A1,1X),10A1)
- 1013 FORMAT(1H ,'(',10A1,')')
- 1014 FORMAT(1H ,'  NO.',2X,'EXPLANATORY VARIABLE     ',4X,'NUMBER OF CA
-     1TEGORIES',8X,'  A I C  ',4X,'DIFFERENCE OF AIC'/1H ,36X,'OF EXPLAN
-     2ATORY VARIABLE'/)
- 1015 FORMAT(1H0,10X,' SUMMARY OF AIC''S FOR THE TWO-WAY TABLES '//)
- 1016 FORMAT(1H1/1H ,'  TWO-WAY TABLES ARRANGED IN ASCENDING ORDER OF AI
-     1C')
+cc 1001 FORMAT(20I4)
+cc 1002 FORMAT(1H1/1H ,'  LIST OF EXPLANATORY VARIABLES ARRANGED IN',
+cc     1        ' ASCENDING ORDER OF AIC'//1H ,'RESPONSE VARIABLE  : '
+cc     2        ,'(',10A1,')'/)
+cc 1003 FORMAT(1H ,I5,10X,10A1,21X,I5,10X,F10.2,5X,F10.2)
+cc 1004 FORMAT(1H0,'(',10A1,')',42X,'(',10A1,')')
+cc 1005 FORMAT(//1H ,5X,'(',10A1,')',42X,'(',10A1,')')
+cc 1006 FORMAT(1H0,9X,12I4)
+cc 1007 FORMAT(1H ,I6,3X,12I4)
+cc 1008 FORMAT(1H ,3X,'TOTAL',1X,12I4)
+cc 1009 FORMAT(///)
+cc 1010 FORMAT(1H1)
+cc 1011 FORMAT(1H+,'EXPLANATORY '/1H ,'VARIABLES'/)
+cc 1012 FORMAT(1H ,14X, 9(1X,10A1,1X),10A1)
+cc 1013 FORMAT(1H ,'(',10A1,')')
+cc 1014 FORMAT(1H ,'  NO.',2X,'EXPLANATORY VARIABLE     ',4X,'NUMBER OF CA
+cc     1TEGORIES',8X,'  A I C  ',4X,'DIFFERENCE OF AIC'/1H ,36X,'OF EXPLAN
+cc     2ATORY VARIABLE'/)
+cc 1015 FORMAT(1H0,10X,' SUMMARY OF AIC''S FOR THE TWO-WAY TABLES '//)
+cc 1016 FORMAT(1H1/1H ,'  TWO-WAY TABLES ARRANGED IN ASCENDING ORDER OF AI
+cc     1C')
       RETURN
       END
