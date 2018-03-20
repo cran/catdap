@@ -1,4 +1,4 @@
-useDynLib(catdap)
+useDynLib(catdap, .registration = TRUE)
 import(graphics)
 importFrom(grDevices, dev.new, gray)
 export(catdap1, catdap1c, catdap2, Barplot2WayTable)

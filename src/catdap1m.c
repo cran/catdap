@@ -4,7 +4,7 @@
 
 extern void F77_NAME(catdap1f)(int*, int*, int*, int*, int*, int*, int*, int*, int*, int*, int*, int*, int*, int*, int*, int*, double*, int*, double*, int*);
 
-SEXP catdap1(SEXP nsamp, SEXP n, SEXP l, SEXP recode, SEXP n1, SEXP iskip1, SEXP n4, SEXP item1, SEXP item2, SEXP iconv, SEXP ires, SEXP iex, SEXP iskip, SEXP cdata)
+SEXP catdap1m(SEXP nsamp, SEXP n, SEXP l, SEXP recode, SEXP n1, SEXP iskip1, SEXP n4, SEXP item1, SEXP item2, SEXP iconv, SEXP ires, SEXP iex, SEXP iskip, SEXP cdata)
 {
     double *d1,*d2;
     int *i1,*i2,*i3,*i4,*i5,*i6,*i7,*i8,*i9,*i10,*i11,*i12,*i13,*i14,*i15,*i16,*i17,*i18;

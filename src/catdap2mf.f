@@ -605,11 +605,12 @@ cc     3                totalr,ia,iab,lcy,totalc,ttrr,kp,nc,ncc,knn,lj,lt,
 cc     4                idat,noo,xx,sk,dx,ab,tttr,a1,a,pa,ptr,ptc,
 cc     5                da,bmin,bmax,am1,ai,aa,ax,totr,samp,n11,n22,
 cc     6                n33,iw,w,nw,jnn,inn,jjn)
-       subroutine catdap2mf(nsamp,n,l,recode,iskip1,it,ipart,nov,icl,
+       subroutine catdap2mf(nsamp,n,l,recode,iskip1,it,nov,icl,
      1              item1,item2,ity,iconv,face,iskip,isk,sk,icls,xx,
-     2              ida,da,iab,totalc,ttrr,ab,iaa,pa,idata,ite,dx,
-     3              aaam,caa,icaa,nnia,lk77,morder,iby,ibc,pbc,
-     4              aic1,iabse,baseaic,n11,n33,ikr,jkr,ikkk,eps01,ier)
+     2              ida,da0,typeu,mix,iab,totalc,ttrr,ab,iaa,pa,
+     3              idata,ite,dx,aaam,caa,icaa,nnia,lk77,morder,iby,ibc,
+     4              pbc,aic1,iabse,baseaic,n11,n33,ikr,jkr,ikkk,eps01,
+     5              ier)
 c
 c     this subroutine is substantially the main program of catdap-02.
 c     this searches for maice within the possible ways of categorization
@@ -644,17 +645,17 @@ cxx     6           icaa(ikr),nnia(ikr),morder(ikr),ier(3),
 cxx     7           iby(nov,ikkk,icl+1),ibc(n11,ikkk,icl+1),
 cxx     8           pbc(n11,ikkk,icl+1),aic1(icl+1),
 cxx     9           iabse(nov,n33,icl+1)
-      integer :: nsamp, n, l, recode, iskip1, it, ipart, nov, icl,
+      integer :: nsamp, n, l, recode, iskip1, it, nov, icl,
      1           item1(n), item2(n), ity(n), iconv(20,recode),
      2           face(l), iskip(20,iskip1), isk(2,iskip1),
-     3           icls(max(10,nov+1),icl), ida(n,nsamp), 
+     3           icls(max(10,nov+1),icl), ida(n,nsamp), mix(n),
      4           iab(n,n11,n33), totalc(n11), ttrr(n,n33), iaa(n,n33),
      5           idata(n), ite(n), caa(ikr,jkr), icaa(ikr), nnia(ikr), 
      6           lk77, morder(ikr), iby(nov,ikkk,icl+1),
      7           ibc(n11,ikkk,icl+1), iabse(nov,n33,icl+1),
      8           n11, n33, ikr, jkr, ikkk, ier(3)
-      real(8) :: sk(20,iskip1), xx(n), da(n,nsamp), ab(n,n33),
-     1           pa(n,n11,n33), dx(n), aaam(ikr),
+      real(8) :: sk(20,iskip1), xx(n), da0(n,nsamp), ab(n,n33),
+     1           pa(n,n11,n33), dx(n), typeu, aaam(ikr),
      2           pbc(n11,ikkk,icl+1), aic1(icl+1), baseaic, eps01
 cxx      dimension item(n),totalr(n33),ia(n,n11,n33),tttr(n33),a1(n11,n33),
 cxx     1           lcy(10,n33),kp(n),nc(n33),ncc(n33),knn(n33),lj(10),
@@ -666,8 +667,12 @@ cxx     3           aa(n33),ax(n33),totr(n33)
       real(8) :: ptr(n,n33), ptc(n11), tttr(n33), a1(n11,n33),
      1           a(n11,n33), bmin(n), bmax(n), am1(n), ai(n), aa(n33),
      2           ax(n33), totr(n33), bmagic, xmagic, am, am2, am11, aii,
-     3           sum, shift, expo, tsmp, aaa, al, al0, aic, aicmm, daic,
+     3           sum, shift, expo, tsmp, aaa, al, aic, aicmm, daic,
      4           ddd, as, as1, tt, damx
+c-----    modified for missing value handling by M.I.
+      integer :: Mtype(n), mmi(n), magic, imagic, mixtype, igd(n)
+      real(8) :: postsamp, da(n,nsamp), dai, daj, tem, dam2
+c-----
 c
 cc      character*4    fm1(20),fm2(20),fm3(20)
 cc      character*1    bl,mx,st
@@ -692,13 +697,24 @@ c
          imagic = item2(ires)
       end if
 c
+c-----    modified for missing value handling by M.I.
+      postsamp = 1.d0
+      do i=1,n
+         igd(i) = 0
+         if(ity(i) .eq. 2) igd(i)=1
+      enddo
+      do i=1,n
+         mtype(i)=0
+      end do
+c-----
+c
 c     initialization
 c
 c <<<
       ikp=n
       ig=face(1)
       if(ig.eq.0) return
-c
+      novnew = n
       iab(1:n,1:n11,1:n33) = 0
       ia(1:n,1:n11,1:n33) = 0
       totalc(1:n11) = 0
@@ -719,8 +735,16 @@ c
       ibc(1:n11,1:ikkk,1:icl1) = 0
       pbc(1:n11,1:ikkk,1:icl1) = 0.0d0
       aic1(1:icl1) = 0.0d0
-      iabse(1:nov,1:n33,1:icl) = 0
+      iabse(1:nov,1:n33,1:icl1) = 0
       ier(1:3) = 0
+c
+      bmin(1:n)=1.d50
+      bmax(1:n)=-1.d50
+      do i=1,n
+         do j=1,nsamp
+            da(i,j) = da0(i,j)
+         end do
+      end do
 c >>>
       nx1=n
 cc      iskip1=iskip1-1
@@ -743,6 +767,9 @@ c
 cc      ig=face(1)
       nj=nsamp/2
       nns=0
+c-----    modified for missing value handling by M.I.
+      nns1=0
+c-----
       do 90 j=1,nsamp
 cc      read(in,fmt) (da(i),i=1,n)
       if(iskip1.eq.0) go to 85
@@ -760,7 +787,7 @@ cc      if(da(iskip2).gt.sk(2*ii-1,i).and.da(iskip2).lt.sk(2*ii,i))
       iskip3=iskip(2,i)
 cc      idata1=da(iskip2)+0.1
 cxx      idata1=da(iskip2,j)
-      idata1=int(da(iskip2,j))
+      idata1=int(da(iskip2,j)+0.1)
       do 89 ii=1,iskip3
       if(idata1.eq.iskip(ii+2,i)) go to 90
    89 continue
@@ -775,20 +802,45 @@ c <<<
    84    continue
       end if
 c >>>
+c-----    modified for missing value handling by M.I.
+      nns1 = nns1 + 1
+      if(typeU .gt. 0.d0) then
+         if(magic .ne. 0) then
+            if(da(magic,j) .ge. typeU) then
+               nns1 = nns1 - 1
+            endif   
+         endif
+      endif
+c-----
       ii=0
       do 100 i=1,n
-      if(xx(i).eq.0) go to 100
+c-----    modified for missing value handling by M.I.
+cm         if(xx(i).eq.0) go to 100
+         dai = da(i,j)
+c-----
       if(nns.ne.1) go to 110
+c-----    modified for missing value handling by M.I.
 cc      bmin(i)=da(i)
 cc      bmax(i)=da(i)
-      bmin(i)=da(i,j)
-      bmax(i)=da(i,j)
-      go to 100
+cm      bmin(i)=da(i,j)
+cm      bmax(i)=da(i,j)
+      bmin(i)=1.d50
+      bmax(i)=-1.d50
+cm      go to 100
+c-----
   110 continue
+c-----    modified for missing value handling by M.I.
 cc      if(bmin(i).ge.da(i)) bmin(i)=da(i)
 cc      if(bmax(i).le.da(i)) bmax(i)=da(i)
-      if(bmin(i).ge.da(i,j)) bmin(i)=da(i,j)
-      if(bmax(i).le.da(i,j)) bmax(i)=da(i,j)
+cm      if(bmin(i).ge.da(i,j)) bmin(i)=da(i,j)
+cm      if(bmax(i).le.da(i,j)) bmax(i)=da(i,j)
+      if( typeU .le. 0 .or. dai .lt. typeU) then
+         if(bmin(i).ge.dai) bmin(i)=dai
+         if(bmax(i).le.dai) bmax(i)=dai
+      else
+         Mtype(i) = Mtype(i) + 1
+      endif
+c-----
   100 continue
    90 continue
       nsamp=nns
@@ -799,20 +851,46 @@ c >>>
       do 120 i=1,n
 c-----    modified by M.I.
       if(i .eq. magic) then
-           ity(i) = 2
-           bmagic = bmin(magic)
-cxx           xmagic = (bmax(magic)-bmin(magic))/item2(magic)
-           xmagic = (bmax(magic)-bmin(magic))/dble(item2(magic))
-           do 115 kk=0,item2(magic)
-             ab(magic, kk+1) = bmin(magic)+xmagic*kk
-  115      continue
-           xx(i) = 0.d0
-           goto 120
-      endif
+         ity(i) = 2
+         bmagic = bmin(magic)
+c-----    modified for missing value handling by M.I.
+         if(mix(magic) .gt. 0) then
+            xmagic =
+     & (bmax(magic)-bmin(magic))/dble(item2(magic)-mix(magic))
+         else
+            xmagic = (bmax(magic)-bmin(magic))/dble(item2(magic))
+         endif
+c
+         klim = item2(magic)-mix(magic) - 1
 c-----
-      if(xx(i).eq.0) go to 120
+cxx        do 115 kk=0,klim+1
+cc            ab(magic, kk+1) = bmin(magic)+xmagic*kk
+cc  115    continue
+         do 115 kk=0,klim
+            ab(magic, kk+1) = bmin(magic)+xmagic*kk
+  115    continue
+            ab(magic, klim+2) = bmax(magic)
+         xx(i) = 0.d0
+         goto 120
+      endif
+c-----    modified for missing value handling by M.I.
+      if(xx(i).eq.0) then
+         if( ity(i) .ne. 2 ) then
+            xx(i) = (bmax(i)-bmin(i))/100
+         else
+            goto 120
+         endif
+      endif
+cm      if(xx(i).eq.0) go to 120
+c-----
 cxx      mm=(bmax(i)-bmin(i))/xx(i)+1
       mm=int((bmax(i)-bmin(i))/xx(i))+1
+      if(igd(i) .eq.1) then
+         am1(i) = bmin(i) - 0.5d0
+         ai(i) = 1.d0
+         goto 1130
+      endif
+c-----
       mm=min(mm,50,nj)
 cxx      m=((bmax(i)-bmin(i))/xx(i)  )/mm+1
       m=int(((bmax(i)-bmin(i))/xx(i))/mm)+1
@@ -825,14 +903,30 @@ cc------------------------------
       am1(i)=i1*ai(i)+0.5*xx(i)
       if(am1(i).ge.bmin(i)) am1(i)=am1(i)-ai(i)
       if(dabs(am1(i)-bmin(i)).lt.xx(i)/1.d5) am1(i)=am1(i)-ai(i)
+c-----    modified for missing value handling by M.I.
+ 1130 continue
+c-----
       am2=am1(i)
       ab(i,1)=am2
       do 130 ii=1,100
-      am2=am2+ai(i)
-      ab(i,ii+1)=am2
-      if(am2.ge.bmax(i)) go to 140
+         am2=am2+ai(i)
+         ab(i,ii+1)=am2
+c-----    modified for missing value handling by M.I.
+cm      if(am2.ge.bmax(i)) go to 140
+cc         if(am2.ge.bmax(i)) then
+         dam2 = dabs(am2-bmax(i))
+         if(am2.ge.bmax(i) .or. dam2.le.eps01) then
+            if(mix(i) .gt. 0) then
+               am2=am2+ai(i)
+               ab(i,ii+2) = am2
+            endif
+            go to 140
+         endif
+c-----
   130 continue
   140 kp(i)=ii
+c-----    modified for missing value handling by M.I.
+      kp(i)=kp(i) + mix(i)
   120 continue
 cc      rewind 1
    80 continue
@@ -843,25 +937,32 @@ c
 c
 c     construction of two-way tables
 c
-      do 150 k=1,nsamp
-      if(it.eq.0) go to 160
+cc      do 150 k=1,nsamp
+      k = 0
+      do 150 kk=1,nsamp
+         k = k + 1
+         if(it.eq.0) go to 160
 c
 c     discretizing continuous data into categorical data in the case
 c     of 'it=1'
 c
 cc      read(1) (da(j),j=1,n)
       do 170 j=1,n
-c-----    modified by M.I.
-         if(j .eq. magic) then
-cxx           iv = (da(j,k)-bmagic)/xmagic + 1
-           iv = int((da(j,k)-bmagic)/xmagic) + 1
-           if(iv .gt. imagic) iv = imagic
-           da(j,k) = iv
-         endif
+c-----    modified for missing value handling by M.I.
+         daj = da(j,kk)
+         if(typeU .le. 0.d0 .or. daj .lt. typeU) then
+            if(j .eq. magic) then
+cxx               iv = (daj-bmagic)/xmagic + 1
+               iv = int((daj-bmagic)/xmagic) + 1
+cxx              if(iv .gt. imagic) iv = imagic 
+               if(iv .gt. imagic-mix(j)) iv = imagic - mix(j)
+               daj = iv
+               goto 180
+            endif
 c-----
 c     if(xx(j).eq.0) go to 180
       if(item1(j).ne.0.or.item2(j).ne.0) go to 180
-      kpp=kp(j)
+      kpp=kp(j) - mix(j)
       item(j)=kp(j)
       ite(j)=kp(j)
       am11=am1(j)
@@ -872,18 +973,47 @@ c     if(xx(j).eq.0) go to 180
 cc      if(da(j).gt.am11) go to 190
 cc      if(abs(da(j)-am11).lt.xx(j)/1.d5) go to 190
 cc      idata(j)=ii1
-      if(da(j,k).gt.am11) go to 190
-      if(dabs(da(j,k)-am11).lt.xx(j)/1.d5) go to 190
+ccc      if(da(j,k).gt.am11) go to 190
+ccc      if(dabs(da(j,k)-am11).lt.xx(j)/1.d5) go to 190
+c-----    modified by M.I.
+      if(daj.gt.am11) go to 190
+      if(ii1.lt.kpp-mix(j).and.abs(daj-am11).lt.xx(j)/1.d5) go to 190
+c-----
       ida(j,k)=ii1
+c <<<
+      daj = ii1
+c >>>
       go to 200
   190 continue
+c-----    modified for missing value handling by M.I.
+      ida(j,k)=kpp
+c-----
   200 continue
-      go to 170
+c-----    modified for missing value handling by M.I.
+cm      go to 170
+      go to 171
+c-----
   180 continue
 cc      idata(j)=da(j)+0.01
 cxx      ida(j,k)=da(j,k)+0.01
-      ida(j,k)=int(da(j,k)+0.01)
-      if(k.ne.1) go to 170
+c-----    modified for missing value handling by M.I.
+cm      ida(j,k)=int(da(j,k)+0.01)
+cxx      ida(j,k)=daj+0.01
+      ida(j,k)=int(daj+0.01)
+c
+c if(typeU .le. 0.d0 .or. daj .lt. typeU) then
+      else
+cxx         mixtype = daj/typeU
+         mixtype = int(daj/typeU)
+         ida(j,k)=mixtype+kp(j)-mix(j)
+         if(j .eq. magic) then
+            ida(j,k)=mixtype+item2(j)-mix(j)
+         endif
+         daj = ida(j,k)
+      endif
+cm      if(k.ne.1) go to 170
+      if(k.ne.1) go to 171
+c-----
       item(j)=item2(j)-item1(j)+1
       iii=1
       if(item(j).le.50) go to 206
@@ -895,9 +1025,13 @@ cxx      ida(j,k)=da(j,k)+0.01
       do 205 i=1,item3
       iaa(j,i)=i+item1(j)-1
   205 continue
+c-----    modified for missing value handling by M.I.
+  171 continue
+      da(j,k) = daj
+c-----
   170 continue
 c
-c     code value conversion
+c     code value conversion  
 c
       if(recode.eq.0) go to 245
       do 255 i=1,n
@@ -964,7 +1098,8 @@ c
       iskip3=iskip(2,is1)
       do 217 is2=1,iskip3
 cc      if(idata(iskip2).eq.iskip(is2+2,is1)) go to 150
-      if(ida(iskip2,k).eq.iskip(is2+2,is1)) go to 150
+cdx      if(ida(iskip2,k).eq.iskip(is2+2,is1)) go to 150
+      if(ida(iskip2,kk).eq.iskip(is2+2,is1)) go to 150
   217 continue
   215 continue
   212 continue
@@ -979,8 +1114,10 @@ c
 cc      ik1=idata(i)+1
 cc      if(idata(i).eq.0) ik1=11
 cc      idata(i)=iconv(ik1,ik)
-      ik1=ida(i,k)+1
-      if(ida(i,k).eq.0) ik1=11
+cdx      ik1=ida(i,k)+1
+cdx      if(ida(i,k).eq.0) ik1=11
+      ik1=ida(i,kk)+1
+      if(ida(i,kk).eq.0) ik1=11
       ida(i,k)=iconv(ik1,ik)
       go to 250
   260 continue
@@ -992,10 +1129,12 @@ c     code value  'item2(i)' )
 c
       do 270 i=1,n
 cc      if(idata(i).gt.item2(i).or.idata(i).lt.item1(i)) go to 940
-      if(ida(i,k).gt.item2(i).or.ida(i,k).lt.item1(i)) go to 940
+cdx      if(ida(i,k).gt.item2(i).or.ida(i,k).lt.item1(i)) go to 940
+      if(ida(i,kk).gt.item2(i).or.ida(i,kk).lt.item1(i)) go to 940
 c     if(idata(i).gt.item2(i).or.idata(i).lt.item1(i)) idata(i)=item2(i)
 cc      idata(i)=idata(i)-item1(i)+1
-      ida(i,k)=ida(i,k)-item1(i)+1
+cdx      ida(i,k)=ida(i,k)-item1(i)+1
+      ida(i,k)=ida(i,kk)-item1(i)+1
   270 continue
 cc      write(1) (idata(i),i=1,n)
       do 285 i=1,n
@@ -1008,6 +1147,15 @@ cc      idata(i)=(idata(i)-1)/iii+1
 c
 c     construction of two-way tables
 c
+c-----    modified for missing value handling by M.I.
+       if(k.eq.1) then
+          do i=1,n
+            if(ity(i) .eq. 1) then
+               item(i) = kp(i)
+            endif
+          enddo
+       endif
+c-----
 cc      ii=0
       do 290 i2=1,l
       i3=face(i2)
@@ -1053,6 +1201,9 @@ cc <<<
       j1=1
       j2=item(k)
 c >>>
+c-----    modified for missing value handling by M.I.
+      mixk = mix(k21)
+c-----
       if(k.eq.i3) go to 330
       itype=ity(k)
 cc      jj=0
@@ -1086,15 +1237,22 @@ c-----   modified by M.I.
          sum = 0.d0
          do 365 i=i1,i2
             if( totalc(i) .gt. 0.d0) then
-             tem = totalc(i) 
-             baseaic = baseaic + tem * log (tem) - 1.d0
-             sum = sum + totalc( i ) 
+cm             tem = totalc(i)
+               tem = totalc(i)*postsamp
+               baseaic = baseaic + tem * log (tem) - 1.d0
+cm             sum = sum + totalc( i ) 
+                sum = sum + totalc( i )*postsamp
             endif
   365    continue
          baseaic =  baseaic - sum * log(sum) + 1.d0
          baseaic = -2.d0 * baseaic
+c-----    modified for missing value handling by M.I.
+          aicmin = 0.d0
+          ipmin = 0
+c-----
          if( magic .ne.0) then
-            shift = 2.d0 * sum * LOG( xmagic )
+cm            shift = 2.d0 * sum * LOG( xmagic )
+            shift = 2.d0 * (sum - Mtype(magic)) * LOG( xmagic )
             baseaic = baseaic + shift
          endif
       endif
@@ -1143,7 +1301,13 @@ cc      ptr(jj)=(totalr(jj)*100.)/totalr(jj)
       pt=(nsamp/samp)*100.
       expo=exp(-1.)
       lq=1
-      if(j2-j1.eq.0) go to 330
+c <<<
+c      if(j2-j1.eq.0) go to 330
+      if(j2-j1.eq.0) then
+         novnew = novnew-1
+         go to 330
+      end if
+c >>>
       if(itype.lt.0) dx(k21)=1.d10
       if(itype.lt.0) go to 330
       if(itype.eq.1.and.j2-j1.gt.1) go to 430
@@ -1195,7 +1359,7 @@ cc      if(totalr(j).eq.0) go to 410
       if(totalr(j).eq.0) go to 410
       aaa=a1(i,j)
       if(aaa.le.0.0) aaa=expo
-         al0=al
+c      al0=al
       al=al+aaa*log(aaa/(tt*(totalr(j)+tttr(j)))*(samp+tsmp))
   410 continue
   411 continue
@@ -1214,7 +1378,10 @@ cxx  413 if(totalr(j).eq.0) jj0=jj0-1
       if(totalr(j).eq.0) jj0=jj0-1
   413 continue
       inn=ii0*jj0-jj0-ii0+1
-      aic=-2.*(al-inn)
+c-----    modified for missing value handling by M.I.
+cm      aic=-2.*(al-inn)
+      aic=-2.*(al*postsamp - inn)
+c-----
       dx(k21)=aic
       go to 790
   435 kkm=k
@@ -1233,12 +1400,12 @@ cxx  414 if(totalc(i).eq.0) ii0=ii0-1
   440 continue
       n1=n1+1
 cc      do 450 jj3=1,jj
-CXX      do 450 jj3=1,j2
+cxx      do 450 jj3=1,j2
 cxx      totr(jj3)=0.
-      totr(1:j2)=0.
 cc      do 450 ii1=1,ii
 cxx      do 450 ii1=1,i2
 cxx  450 a1(ii1,jj3)=0.
+      totr(1:j2)=0.
       a1(1:i2,1:j2)=0.
       jj1=0
 c <<<
@@ -1250,6 +1417,7 @@ cxx      do 460 j=1,j2
       do 461 j=1,j2
 c <<<
       jj=j
+      jkeep=j
 c >>>
       nc(j)=n1
       do 460 kj=1,n1
@@ -1263,13 +1431,34 @@ cc      do 470 i=1,ii
       a1(i,j)=a1(i,j)+a(i,jj1)
   470 continue
 cc      if(jj1.eq.jj) go to 480
-      if(jj1.eq.j2) go to 480
+c-----    modified for missing value handling by M.I.
+cm      if(jj1.eq.j2) go to 480
+cc      if(jj1.eq.jj-mix(k)) go to 480
+      if(jj1.eq.j2-mix(k)) go to 480
+c-----
   460 continue
   461 continue
   480 continue
 cc      nc(j)=kj
       nc(jj)=kkj
       kk=j
+c-----    modified for missing value handling by M.I.
+      do mi1 = 1, mix(k)
+        j=j+1
+        kk=kk+1
+        nc(kk)=1
+        jj1=jj1+1
+        totr(j)=totr(j)+totalr(jj1)
+cc        do i=1,ii
+         do i=1,i2
+            a1(i,j)=a1(i,j)+a(i,jj1)
+         end do
+      end do
+      michk=0
+      do mtem=1,kk
+         michk=michk+nc(mtem)
+      enddo
+c-----
       al=0.
       tsmp=0.0
       do 490 j=1,kk
@@ -1304,12 +1493,25 @@ cxx  511 if(totr(j).eq.0.) kk0=kk0-1
       if(totr(j).eq.0.) kk0=kk0-1
   511 continue
       inn=ii0*kk0-kk0-ii0+1
-      aic=-2.*(al-inn)
+c-----    modified for missing value handling by M.I.
+cm      aic=-2.*(al-inn)
+      aic=-2.*(al*postsamp-inn)
+c-----
       aicmm=aic
       kk5=kk
       do 530 i=1,kk
       ncc(i)=nc(i)
   530 continue
+c----- liondap by M.I.
+      if(nc(1) .eq. 1 .and. totr(1).eq.0.d0) then
+         kk5=kk5-1
+         do i=1,kk5
+            totr(i)=totr(i+1)
+            ncc(i)=ncc(i+1)
+         enddo         
+         ncc(1)=ncc(1)+1
+      endif
+c-------
       if(n1.eq.1) go to 540
       n10=n1-1
   550 continue
@@ -1333,9 +1535,14 @@ cc      do 570 i=1,ii
   570 continue
   571 continue
       jj1=n10
+c-----    modified for missing value handling by M.I.
+cc      if(jj1 .eq. jj - mix(k)) go to 600
+      if(jj1 .eq. j2 - mix(k)) go to 600
+c-----
 cc      do 580 j=2,jj
 cxx      do 580 j=2,j2
-      do 581 j=2,j2
+ccc      do 581 j=2,j2
+      do 581 j=2,j2-mix(k)
       nc(j)=n1
       do 580 kj=1,n1
       jj1=jj1+1
@@ -1344,12 +1551,29 @@ cc      do 590 i=1,ii
       do 590 i=1,i2
       a1(i,j)=a1(i,j)+a(i,jj1)
   590 continue
-      if(jj1.eq.j2) go to 600
+c-----    modified for missing value handling by M.I.
+cm      if(jj1.eq.j2) go to 600
+cc      if(jj1 .eq. jj - mix(k)) go to 600
+      if(jj1 .eq. j2 - mix(k)) go to 600
+c-----
   580 continue
   581 continue
   600 continue
       kk=j
       nc(j)=kj
+c-----    modified for missing value handling by M.I.
+      do mi1 = 1, mix(k)
+         j=j+1
+         kk=kk+1
+         nc(kk)=1
+         jj1=jj1+1
+         totr(j)=totr(j)+totalr(jj1)
+cc         do i=1,ii
+         do i=1,i2
+            a1(i,j)=a1(i,j)+a(i,jj1)
+         end do
+      end do
+c-----
       al=0.
       tsmp=0.0
       do 611 j=1,kk
@@ -1384,7 +1608,10 @@ cxx  621 if(totr(j).eq.0.) kk0=kk0-1
       if(totr(j).eq.0.) kk0=kk0-1
   621 continue
       inn=ii0*kk0-kk0-ii0+1
-      aic=-2.*(al-inn)
+c-----    modified for missing value handling by M.I.
+cm      aic=-2.*(al-inn)
+      aic=-2.*(al*postsamp-inn)
+c-----
 ccxx      if(aicmm.lt.aic) go to 640
          daic=dabs(aicmm-aic)
          if(daic.ne.0) daic=daic/max(dabs(aicmm), dabs(aic))
@@ -1395,6 +1622,16 @@ ccxx      if(aicmm.lt.aic) go to 640
       do 650 i=1,kk
       ncc(i)=nc(i)
   650 continue
+c----- liondap by M.I.
+      if(nc(1) .eq. 1 .and. totr(1).eq.0.d0) then
+         kk5=kk5-1
+         do i=1,kk5
+            totr(i)=totr(i+1)
+            ncc(i)=ncc(i+1)
+         enddo         
+         ncc(1)=ncc(1)+1
+      endif
+c---------
   640 continue
       n10=n10-1
       go to 550
@@ -1448,10 +1685,11 @@ c <<<
       kk1=1
 c >>>
       do 760 i=1,ng
-ccxx      if(am.lt.ax(i)) go to 760
+c!!!
+ccxx         if(am.lt.ax(i)) go to 760
          damx=dabs(am-ax(i))
          if(damx.ne.0) damx=damx/max(dabs(am), dabs(ax(i)))
-      if(am.lt.ax(i) .and. damx.gt.eps01) go to 760
+         if(am.lt.ax(i) .and. damx.gt.eps01) go to 760
 
       am=ax(i)
       kk1=i
@@ -1483,7 +1721,8 @@ cc      if(imax1.gt.imaxx) imaxx=imax1
 cc      call ac1p(a,ii,totalr,jj,iw(1),nc,ncc,lcy,lj,knn,iw(i11),a1,
 cc     1          totr,tttr,aa,am,kk5,kk2,iw(i12),w(1),n11,n33,totalc)
       call ac1p(a,i2,totalr,j2,nc,ncc,lcy,lj,knn,a1,
-     1          totr,tttr,aa,am,kk5,kk2,n11,n33,totalc,eps01)
+cm     1          totr,tttr,aa,am,kk5,kk2,n11,n33,totalc,eps01)
+     1 totr,tttr,aa,am,kk5,kk2,n11,n33,totalc,postsamp,mixk,igd,k,eps01)
 cc      imaxx=imax0
 cc      jmaxx=jmax0
       kk1=kk2
@@ -1524,6 +1763,7 @@ cxx      if(iitt.eq.0) go to 803
       jity=jity+1
 cxx  803 continue
   805 continue
+
       if(jity.le.1) ity(k21)=-1
       if(jity.le.1) dx(k21)=1.d9
       if(jity.le.1) go to 870
@@ -1536,7 +1776,21 @@ cc      noo(k21)=jjj
       ab(k,j+1)=am2
   860 continue
       ab(k,1)=bmin(k)
-      ab(k,kk5+1)=bmax(k)
+c-----    modified for missing value handling by M.I.
+      mi2 = kk5 - mix(k) +1
+      ab(k,mi2)=bmax(k)
+      if (mix(k).ne.0) then
+      do mi1=1,mix(k)
+        ab(k,mi2+mi1) = typeU*(mi1+1)
+      enddo
+      end if
+c-----
+c-----   modified by M.I.
+      if(magic .ne. 0) then
+         item1(magic)=1
+         item2(magic)=imagic
+      endif
+c-----
       go to 870
   850 continue
       iii=(item2(k)-item1(k))/50+1
@@ -1547,6 +1801,7 @@ cc      noo(k21)=jjj
       if(j.eq.kk5) iaa(k,j)=item2(k)
   880 continue
   870 continue
+
 ccc      jjj=jjj+kk5
       ite(k21)=kk5
   330 continue
@@ -1574,7 +1829,7 @@ c >>>
 ccxx      if(am.lt.dx(j)) go to 333
          ddd = dabs(am-dx(j))
          if(ddd.ne.0) ddd=ddd/max(dabs(am), dabs(dx(j)))
-      if(am.lt.dx(j) .and. ddd.gt.eps01) go to 333
+         if(am.lt.dx(j) .and. ddd.gt.eps01) go to 333
 
       am=dx(j)
       jk=j
@@ -1584,6 +1839,7 @@ cxx      if(nov.lt.0.and.dx(jk).lt.0.) nw1=i+1
       idata(i+1)=jk
       if(ikn.lt.ite(jk)) ikn=ite(jk)
   332 continue
+
 cxx      if(nov.lt.0) nov=nw1
 cc      write(4,2019) (title(i,i3),i=1,20)
 cc      write(4,2020)
@@ -1638,6 +1894,13 @@ cc      jj2=noo(k3)+ite(k3)
       jj2=ite(k3)
       jj3=ite(k3)
       if(ity(k3).lt.0) go to 920
+c <<<
+      if (jj1 .eq. jj2) then
+         do i = i1,i2
+            iab(k3,i,1) = totalc(i)
+         enddo
+      end if
+c >>>
 cc      ii=0
       do 800 j=1,jj3
 cc      ttrr(j)=0
@@ -1691,10 +1954,10 @@ cc      write(4,2003) (i,i=ip1,ip2)
 cc      write(4,2005)(bl,(title(i,k3),i=1,20),j=1,lq)
 cc      write(4,2022) (mx,i=1,ncpr)
 cc      jj=0
-cc      do 890 j=jj1,jj2
+      do 890 j=jj1,jj2
 cc      jj=jj+1
 cc      write(4,2006) jj ,(iab(i,j),i=ip1,ip2),ttrr(jj)
-cc  890 continue
+  890 continue
 cc      write(4,2022) (mx,i=1,ncpr)
 cc      write(4,2010) (totalc(i),i=ip1,ip2),nsamp
 cc      write(4,2022) (mx,i=1,ncpr)
@@ -1749,7 +2012,7 @@ cc  921 if(ity(i).ge.0) novv=novv+1
 cc      if(izu.eq.1) call pr3(n11,n22,ite,title,ptc,iab,idata,i3,i1,i2,
 cc     1                      nx1,xx,it,novv,ikpp)
 cc      if(ipart.eq.1) write(4,2001)
-      if(ipart.eq.1) go to 315
+cc      if(ipart.eq.1) go to 315
 c
 c     storage allocation for necessary variables
 c
@@ -1822,14 +2085,15 @@ cc     6          idata(i38),idata(i39),tttr(j1),tttr(j11),tttr(j12),
 cc     7          tttr(j13),tttr(j14),ab,xx,iconv,title,item1,idata(i40),
 cc     8          tttr(j15),it,ikkk,ikr,ikh,ikn,ikf,n,n33,recode,nx,nnn,
 cc     9          jn,izu,icl,icls)
+      novnew = min(nov, novnew)
       call mdap0(ite,nsamp,iaa,idata,ida,iby,ibc,aic1,caa,icaa,nnia,pbc,
-     1           aaam,da,ab,iabse,xx,iconv,item1,ity,it,ikkk,ikr,jkr,
-     2           ikh,ikn,lk77,morder,nov,n11,n33,recode,nx,
-     3           icl,icls,eps01,ier)
-
+     1           aaam,da0,ab,iabse,xx,iconv,item1,ity,it,ikkk,ikr,jkr,
+     2           ikh,ikn,lk77,morder,novnew,n11,n33,recode,nx,icl,icls,
+     3           typeu,magic,imagic,bmagic,xmagic,mmi,mix,postsamp,
+     4           igd,eps01,ier)
+c
       n = nx
-
-  315 continue
+cc  315 continue
 cc      if(ik.eq.l) go to 310
 cc      i3=face(ik+1)
 cc      i2=i2+item(i3)
@@ -1922,7 +2186,9 @@ cc     5                nx,nnn,jnn,izu,icl,icls,in)
       subroutine mdap0(item,nsamp,iaa,imm,idata,iby,ibc,aic1,caa,icaa,
      1              nnia,pbc,aaa,da,ab,iabse,xx,iconv,item1,ity,itx,
      2              ikkk,ikr,jkr,ikh,ikn,lk77,morder,n,n11,n33,recode,
-     3              nx,icl,icls,eps01,ier)
+     3              nx,icl,icls, typeu,magic,imagic,bmagic,xmagic,
+     4              mmi,mix,postsamp,igd,eps01,ier)
+
 c
 c     this subroutine searches for the optimal multidimensional
 c     contingency table with respect to the combination of explanatory
@@ -1954,14 +2220,17 @@ cc     9            icaa(ikr),nnia(ikr),pbcc(n11),morder(ikr)
      5           nx, icl, icls(max(10,n+1),icl), ier(2)
       real(8) :: aic1(icl+1), pbc(n11,ikkk,icl+1), aaa(ikr),
      1           da(nx,nsamp), ab(nx,n33), xx(nx), eps01
-c
+c-----    modified for missing value handling by M.I.
+      integer :: mmi(n), mix(nx), magic, imagic, igd(nx)
+      real(8) :: typeu, postsamp, bmagic, xmagic, damagic, daiy3
+c-----
       integer :: ibd(n11), ib(ikkk), itemx(n), items(2,n),
      1           itemt(n,2), itemy(n), itemz(ikh,n), ias1(2,n,ikn),
      2           ias2(n,ikn), lca(n), lc(n), ca(ikr,jkr), ica(ikr),
      3           lg(ikr), nni(ikr), itype(n), idt(n), data(nsamp,n),
      4           icon(n,ikn), icon1(n,ikn), icon2(n,ikn)
       real(8) :: aa(ikr), aicmm(ikh), pbcc(n11), aic, aicm, acmmm,
-     1           aminx, aaaa, daic
+     1           aminx, aaaa, daic, epsxx
 cc      character*4 fmt(20),fm1(5),fm2(5),fm3(4),fm4(10),fm11(10)
 cc      character*4 fm12(10),fm13(10),fm21(10),fm22(10),fm23(10)
 cc      character*1 mxx(6)
@@ -2004,6 +2273,9 @@ c     of the data
 c
 cc      icl=icl-1
 cc      rewind 1
+c >>>
+      ica(1:ikr) = 0
+c <<<
       i3=imm(1)
       if(itx.ne.0)    go to 920
       kk5=item(i3)
@@ -2014,26 +2286,61 @@ cc      rewind 1
 cc      do 940 j=1,20
 cc      c(j,1)=title(j,i3)
 cc  940 continue
-      ii=1
 cc      do 950 i=2,n
 cc      i3=imm(i)
 cc      do 960 j=1,20
 cc      c(j,i)=title(j,i3)
 cc  960 continue
 cc  950 continue
+c
       do 990 i=1,nsamp
+c-----    modified for missing value handling by M.I.
+         if( magic .ne. 0) then
+            damagic=da(magic,i)
+            if(typeU .le. 0 .or. damagic .lt. typeU) then
+cxx               iv = (damagic-bmagic)/xmagic + 1
+               iv = int((damagic-bmagic)/xmagic) + 1
+cxx               if(iv .gt. imagic) iv = imagic
+               if(iv .gt. imagic-mix(magic)) iv = imagic - mix(magic)
+               damagic = iv
+            else
+cxx               mixtype = damagic/typeU
+               mixtype = int(damagic/typeU)
+               damagic = mixtype + imagic - mix(magic)
+            endif
+            da(magic,i) = damagic
+         endif
+C categorization!!
+         if(i .eq. 1) then
+            do iy=1,n
+               mmi(iy)=imm(iy)
+            enddo
+         endif
+c-----
 cc      if(itx.eq.0) read(1) (idata(j),j=1,nx)
 cc      if(itx.ne.0) read(1)(da(j),j=1,nx)
       do 1100 iy=1,n
       iy3=imm(iy)
 c <<<
       j=1
+      epsxx = xx(iy3)/1.d5
 c >>>
+c-----    modified for missing value handling by M.I.
 cc      if(itx.ne.0.and.xx(iy3).eq.0) j=da(iy3)+0.1
 cxx      if(itx.ne.0.and.xx(iy3).eq.0) j=da(iy3,i)+0.1
-      if(itx.ne.0.and.xx(iy3).eq.0) j=int(da(iy3,i)+0.1)
-      if(itx.ne.0.and.xx(iy3).eq.0) go to 1110
+cm      if(itx.ne.0.and.xx(iy3).eq.0) j=int(da(iy3,i)+0.1)
+cm      if(itx.ne.0.and.xx(iy3).eq.0) go to 1110
+cc      daiy3 = da(iy3,jl)
+      daiy3 = da(iy3,i)
+      if(itx.ne.0.and.xx(iy3).eq.0) then
+         j=int(daiy3+0.1)
+         goto 1110
+      endif
+c-----
       kk5=item(iy3)
+c <<<
+          kk6 = kk5-mix(iy3)
+c >>>
       do 1120 j=1,kk5
       if(itx.ne.0.and.xx(iy3).ne.0.) go to 1130
 cc      if(idata( iy3).le.iaa(iy3,j)-item1(iy3)+1) go to 1110
@@ -2041,8 +2348,14 @@ cc      if(idata( iy3).le.iaa(iy3,j)-item1(iy3)+1) go to 1110
       go to 1120
 cc 1130 if(abs(da(iy3)-ab(iy3,j+1)).lt.xx(iy3)/1.d5) go to 1120
 cc      if(ab(iy3,j+1).gt.da(iy3)) go to 1110
- 1130 if(abs(da(iy3,i)-ab(iy3,j+1)).lt.xx(iy3)/1.d5) go to 1120
-      if(ab(iy3,j+1).gt.da(iy3,i)) go to 1110
+ 1130 continue
+c-----    modified by M.I.
+ccc      if(abs(da(iy3,i)-ab(iy3,j+1)).lt.xx(iy3)/1.d5) go to 1120
+ccc      if(ab(iy3,j+1).gt.da(iy3,i)) go to 1110
+      if(daiy3.gt.ab(iy3,j+1)) go to 1120
+      if(j.lt.kk6 .and. abs(daiy3-ab(iy3,j+1)).lt.epsxx) go to 1120
+      go to 1110
+c-----
  1120 continue
  1110 continue
       if(j.gt.item(iy3).and.xx(iy3).ne.0.) j=item(iy3)
@@ -2138,7 +2451,8 @@ cc     1          iw(i14),iw(i15),iw(i16),iw(i17),c,iw(i18),iw(i19),
 cc     2          ca,ica,nni,data,icon,w(1),w(j11),w(j12),w(j13),aa,
 cc     3          lk7,ikr,ikn,ikf,n,nsamp,iw(i20),nnn,in)
       call aicp0(n,itemx,lc,lk2,aic,ca,ica,nni,data,icon,aa,lk7,ikr,jkr,
-     1          ikn,n,nsamp,eps01,ier)
+cm     1          ikn,n,nsamp,eps01,ier)
+     1          ikn,n,nsamp,postsamp,eps01,ier)
       if( ier(1).ne.0 ) return
 
       aicmm(1)=aic
@@ -2185,6 +2499,10 @@ cxx      do 65 i=1,n
    65 continue
    66 continue
       do 70 j=2,n
+c-----    modified for missing value handling by M.I.
+       mmij = mmi(j)
+       if(igd(mmij) .eq. 1) goto 70
+c-----
       if(itemx(j).le.2) go to 70
       if(itype(j).eq.1) go to 71
       if(itype(j).eq.2) go to 70
@@ -2196,8 +2514,14 @@ cxx      do 106 i=1,n
       do 107 i=1,n
       do 106 l=1,2
       itemt(i,l)=itemx(i)
-      if(l.eq.1.and.i.eq.j) itemt(i,l)=(itemx(i)+1)/2
-      if(l.eq.2.and.i.eq.j) itemt(i,l)=itemx(i)/2+1
+c-----    modified for missing value handling by M.I.
+c      if(l.eq.1.and.i.eq.j) itemt(i,l)=(itemx(i)+1)/2
+c      if(l.eq.2.and.i.eq.j) itemt(i,l)=itemx(i)/2+1
+      if(i.eq.j) then
+         if(l.eq.1) itemt(i,l)=(itemx(i)+1-mix(mmij))/2+mix(mmij)
+         if(l.eq.2) itemt(i,l)=(itemx(i)-mix(mmij))/2+1+mix(mmij)
+      endif
+c-----
   106 continue
   107 continue
       do 130 l=1,2
@@ -2208,11 +2532,19 @@ cxx      do 133 i=1,n
       icon(i,iii)=icon1(i,iii)
   133 continue
   134 continue
-      itemxx=itemz(1,j)
+c-----    modified for missing value handling by M.I.
+c      itemxx=itemz(1,j)
+       itemxx=itemz(1,j) - mix(mmij) 
+c-----
       do 135 i=1,itemxx
       if(l.eq.1) icon(j,i)=(icon1(j,i)+1)/2
       if(l.eq.2) icon(j,i)=icon1(j,i)/2+1
   135 continue
+c-----    modified for missing value handling by M.I.
+       do mi1=1,mix(mmij)
+         icon(j,itemxx+mi1) = icon(j,itemxx)+mi1
+       enddo
+c-----
 cc      imax=imax1
 cc      jmax=jmax1
 cc      call aicp(n,itemt(1,l),lc,lk2,aic,iw(i10),iw(i11),iw(i12),
@@ -2220,13 +2552,14 @@ cc     1          iw(i13),iw(i14),iw(i15),iw(i16),iw(i17),c,iw(i18),
 cc     2          iw(i19),ca,ica,nni,data,icon,w(1),w(j11),w(j12),
 cc     3          w(j13),aa,lk7,ikr,ikn,ikf,n,nsamp,iw(i20),nnn,in)
       call aicp0(n,itemt(1,l),lc,lk2,aic,ca,ica,nni,data,icon,aa,lk7,
-     1          ikr,jkr,ikn,n,nsamp,eps01,ier)
+cm     1          ikr,jkr,ikn,n,nsamp,eps01,ier)
+     1          ikr,jkr,ikn,n,nsamp,postsamp,eps01,ier)
       if( ier(1).ne.0 ) return
 
-ccxx      if(aicm.lt.aic) go to 130
+      if(aicm.lt.aic) go to 130
          daic=dabs(aicm-aic)
          if(daic.ne.0) daic=daic/max(dabs(aicm), dabs(aic))
-      if(aicm.lt.aic .and. daic.gt.eps01) go to 130
+         if(aicm.lt.aic .and. daic.gt.eps01) go to 130
 
       aicm=aic
 cxxd      iko=ik2
@@ -2234,15 +2567,21 @@ cxxd      iko=ik2
       ll=l
       do 150 i=1,n
       itemy(i)=itemx(i)
-      if(l.eq.1.and.i.eq.j) itemy(j)=(itemx(j)+1)/2
-      if(l.eq.2.and.i.eq.j) itemy(j)=itemx(j)/2+1
+c-----    modified for missing value handling by M.I.
+c      if(l.eq.1.and.i.eq.j) itemy(j)=(itemx(j)+1)/2
+c      if(l.eq.2.and.i.eq.j) itemy(j)=itemx(j)/2+1
+      if(i.eq.j) then
+         if(l.eq.1) itemy(j)=(itemx(j)+1-mix(mmij))/2+mix(mmij)
+         if(l.eq.2) itemy(j)=(itemx(j)-mix(mmij))/2+1+mix(mmij)
+      endif
+c-----
   150 continue
 
 ccxx      if(acmmm.lt.aic+1.d-10) go to 160
       if(acmmm.le.aic) go to 160
         daic=dabs(acmmm-aic)
         if(daic.ne.0) daic=daic/max(dabs(acmmm), dabs(aic))
-        if(daic.lt.eps01) go to 160
+        if(daic.le.eps01) go to 160
 
       acmmm=aic
       lk5=lk2
@@ -2292,25 +2631,38 @@ cc      call aicp(n,itemx,lc,lk2,aic,iw(i10),iw(i11),iw(i12),iw(i13),
 cc     1          iw(i14),iw(i15),iw(i16),iw(i17),c,iw(i18),iw(i19),
 cc     2          ca,ica,nni,data,icon,w(1),w(j11),w(j12),w(j13),aa,
 cc     3          lk7,ikr,ikn,ikf,n,nsamp,iw(i20),nnn,in)
+c-----    modified for missing value handling by M.I.
+ccc      if( mix(mmi(j)) .gt. 0 .and. ii .ge. itemxx-mmi(j)) then
+      if( mix(mmi(j)) .gt. 0 .and. ii .gt. itemxx-mix(mmi(j))) then
+c<<<
+           itemx(j)=itemx(j)+1
+c>>>
+         goto 73
+      endif
+      if( mix(mmi(j)) .eq. 0 .or. ii .ne. itemxx) then
+c-----
       call aicp0(n,itemx,lc,lk2,aic,ca,ica,nni,data,icon,aa,lk7,ikr,jkr,
-     1          ikn,n,nsamp,eps01,ier)
+cm     1          ikn,n,nsamp,eps01,ier)
+     1          ikn,n,nsamp,postsamp,eps01,ier)
       if( ier(1).ne.0 ) return
-
+c-----    modified for missing value handling by M.I.
+      endif
+c----
       itemx(j)=itemx(j)+1
       if(aicm.le.aic) go to 73
          daic=dabs(aicm-aic)
          if(daic.ne.0) daic=daic/max(dabs(aicm), dabs(aic))
-         if(daic.lt.eps01) go to 73
+         if(daic.le.eps01) go to 73
 
       aicm=aic
-cxxd      iko=ik2
+c      iko=ik2
       jj=j
       ll=ii
       itemy(j)=itemxx
       if(acmmm.le.aic) go to 85
          daic=dabs(acmmm-aic)
          if(daic.ne.0) daic=daic/max(dabs(acmmm), dabs(aic))
-         if(daic.lt.eps01) go to 85
+         if(daic.le.eps01) go to 85
 
       acmmm=aic
       lk5=lk2
@@ -2404,10 +2756,11 @@ cxxd      ikk=iko
       if(ll.ne.i+1) ias1(1,jj,ii)=ias1(1,jj,ii)+ias1(2,jj,i)
   255 continue
   246 continue
+
 ccxx      if(acmmm.lt.aicm) goto 252
          daic=dabs(acmmm-aicm)
          if(daic.ne.0) daic=daic/max(dabs(acmmm), dabs(aicm))
-      if(acmmm.lt.aicm .and. daic.gt.eps01) goto 252
+         if(acmmm.lt.aicm .and. daic.gt.eps01) goto 252
 
       itemmy=itemy(jj)
       do 251 i=1,itemmy
@@ -2429,13 +2782,21 @@ c
 cc      call bun(icon,ias1,jj,aic,items,ix,itemy,lk2,iw(1),ca,ica,nni,c,
 cc     1         aa,n,iw(i11),w(1),data,nsamp,ikr,ikn,ikf,lk7,nnn,in)
       call bun0(icon,ias1,jj,aic,items,ix,itemy,lk2,ca,ica,nni,aa,n,
-     1         data,nsamp,ikr,jkr,ikn,lk7,eps01,ier)
+cm     1         data,nsamp,ikr,jkr,ikn,lk7,eps01,ier)
+     1         data,nsamp,postsamp,ikr,jkr,ikn,lk7,eps01,ier)
       if(ier(1).ne.0) return
 
       if(aicmm(kt-1).le.aic.or.aicmm(kt).le.aic) go to 270
 ccxx      if(aic-aicmm(kt-1).gt.1.d-10.or.aic-aicmm(kt).gt.1.d-10)
-      if(aic-aicmm(kt-1).gt.eps01 .or. aic-aicmm(kt).gt.eps01)
-     1 go to 270
+ccc      if(aic-aicmm(kt-1).gt.eps01 .or. aic-aicmm(kt).gt.eps01)
+ccc     1 go to 270
+         daic=dabs(aicmm(kt-1)-aic)
+         if(daic.ne.0) daic=daic/max(dabs(aicmm(kt-1)), dabs(aic))
+         if(daic.le.eps01) goto 270
+         daic=dabs(aicmm(kt)-aic)
+         if(daic.ne.0) daic=daic/max(dabs(aicmm(kt)), dabs(aic))
+         if(daic.le.eps01) goto 270
+
       kt=kt+1
       aicmm(kt)=aic
       do 280 i=1,n
@@ -2527,7 +2888,7 @@ c >>>
       if(aminx.le.aaa(i)) go to 343
          daic=dabs(aminx-aaa(i))
          if(daic.ne.0) daic=daic/max(dabs(aminx), dabs(aaa(i)))
-         if(daic.lt.eps01) go to 343
+         if(daic.le.eps01) go to 343
 
       aminx=aaa(i)
       lk3=i
@@ -2540,10 +2901,11 @@ cc      lx=caa(lk3,i)
 cc      do 347 ix=1,20
 cc      cb(ix,i)=c(ix,lx)
 cc  347 continue
+c!!!!!
 ccxx      if(aaaa.lt.aaa(lk3)-1.0d-10) go to 345
          daic=dabs(aaaa-aaa(lk3))
          if(daic.ne.0) daic=daic/max(dabs(aaaa), dabs(aaa(lk3)))
-       if(aaaa.lt.aaa(lk3) .and. daic.gt.eps01) go to 345
+         if(aaaa.lt.aaa(lk3) .and. daic.gt.eps01) go to 345
 
 cxx      if(lk4.ne.lk44) go to 345
       if(iii.ne.ktt .and. lk4.ne.lk44) go to 345
@@ -2568,12 +2930,16 @@ cc      if(lk4.ge.2) write(4,2018) iij,(cb(ix,2),ix=1,20),nnia(lk3),
 cc     1                           aaa(lk3),aaa2,aaa3
 cc      if(lk4.ge.3) write(4,2019) ((cb(ix,i),ix=1,20),i=3,lk4)
 cc      if(lk4.lt.2) write(4,2018) iij,cz,nnia(lk3),aaa(lk3),aaa2,aaa3
+c-----    modified for missing value handling by M.I.
+      do i=2,lk4
+         lx=imm(caa(lk3,i))
+      enddo
+c-----
       lk33=lk3
       lk44=lk4
   342 continue
   344 continue
 cc      write(4,2042)
-
   348 continue
 c
 c     printing out 'contingency table with the optimal combination
@@ -2590,7 +2956,7 @@ ccxx      if(aicmm(i).ge.aicm) go to 350
       if(aicm.le.aicmm(i)) go to 350
          daic=dabs(aicm-aicmm(i))
          if(daic.ne.0) daic=daic/max(dabs(aicm), dabs(aicmm(i)))
-         if(daic.lt.eps01) go to 350
+         if(daic.le.eps01) go to 350
 
       aicm=aicmm(i)
       ji=i
@@ -2753,7 +3119,9 @@ cc      write(4,2002)
 cc      call aicp1(lk5,itemx,lc,aic,iw(i13),iw(i16),iw(i17),data,icon2,
 cc     2           w(j12),w(j13),ikr,ikn,ikf,n,nsamp,iw(i20),nnn,in)
 cxx      call aicp10(lk5,itemx,lc,aic,data,icon2,ikr,ikn,n,nsamp,ier)
-      call aicp10(lk5,itemx,lc,aic,data,icon2,ikn,n,nsamp,ier)
+cm      call aicp10(lk5,itemx,lc,aic,data,icon2,ikn,n,nsamp,ier)
+      call aicp10(lk5,itemx,lc,aic,data,icon2,ikn,n,nsamp,
+     1            postsamp,ier)
       if( ier(1).ne.0 ) return
 
 cc      write(4,2045) aic
@@ -2764,7 +3132,8 @@ cc      write(4,2034)
       if(i.eq.1) ij=1
       ijj=imm(ij)
       iii=idt(i)
-      if(itype(ij).ne.1) go to 555
+cc      if(itype(ij).ne.1) go to 555  BUGFIX2 by M.I.
+      if(itype(ij).eq.2) go to 555
       itm=item(ijj)
       nn2=1
       nn1=0
@@ -2910,7 +3279,6 @@ cc  575 write(4,2048) ikkk,ikk
          ier(2)=ikk
          return
   585 continue
-cddd         ier(1)=2048
          ier(2)=kkj
          return
   588 continue
@@ -2996,7 +3364,8 @@ cc      subroutine aicp(k,idf,lc,lk2,aicc,ld,le,lb,ni,l1,l2,ly,lp,c,
 cc     1                cb,lz,ca,ica,nni,data,icon,am,acmm,bic,ac,aa,
 cc     2                lk7,ikr,ikn,ikf,n,nsamp,iw,nnn,in)
       subroutine aicp0(k,idf,lc,lk2,aicc,ca,ica,nni,data,icon,aa,lk7,
-     1                 ikr,jkr,ikn,n,nsamp,eps01,ier)
+ccm     1                 ikr,jkr,ikn,n,nsamp,eps01,ier)
+     1                 ikr,jkr,ikn,n,nsamp,postsamp,eps01,ier)
 c
 c     this subroutine provides various combinations of explanatory
 c     variables to compute the corresponding aic's.   this is almost
@@ -3013,7 +3382,7 @@ cxx     3          ca(ikr,jkr),ica(ikr),nni(ikr),data(nsamp,n),ier(2)
       integer :: k, idf(n), lc(n), lk2, ca(ikr,jkr), ica(ikr), nni(ikr),
      1           data(nsamp,n), icon(n,ikn), lk7, ikr, jkr, ikn, n,
      2           nsamp, ier(2)
-      real(8) :: aicc, aa(ikr), eps01
+      real(8) :: aicc, aa(ikr), postsamp,eps01
 c
       integer :: ld(n,n), le(n,n), lb(n), ni(n),l 1(n), l2(n), ly(2,n),
      1           lp(2), lz(n)
@@ -3058,7 +3427,8 @@ cc      call aicsub (idf,lk3,ac(1),ni(1),bic(1),iw(1),iw(i11),iw(i12),
 cc     1             iw(i13),ly,lp,data,icon,nsamp,n,ikf,ikn,
 cc     2             iw(i14),iw(i15),in)
       call aicsub0 (idf,lk3,ac(1),ni(1),bic(1),ly,lp,data,icon,nsamp,n,
-     1             ikf,ikn,ier)
+ccm     1             ikf,ikn,ier)
+     1             ikf,ikn,ipmin,postsamp,ier)
       if( ier(1).ne.0 ) return
 c-----    modified by M.I.
       if(ac(1) .gt. aa(lk4)) go to 45
@@ -3093,13 +3463,14 @@ c >>>
 cc      call aicsub (idf,lk3,ac(i),ni(i),bic(i),iw(1),iw(i11),iw(i12),
 cc     1             iw(i13),ly,lp,data,icon,nsamp,n,ikf,ikn,
 cc     2             iw(i14),iw(i15),in)
+
       call aicsub0 (idf,lk3,ac(i),ni(i),bic(i),ly,lp,data,icon,nsamp,n,
-     1             ikf,ikn,ier)
+cm     1             ikf,ikn,ier)
+     1             ikf,ikn,ipmin,postsamp,ier)
       if( ier(1).ne.0 ) return
 c-----    modified by M.I.
       if(ac(i) .gt. aa(lk4)) go to 65
 c-----
-
       aa(lk4)=ac(i)
       nni(lk4)=ni(i)
       ca(lk4,1)=l1(1)
@@ -3124,10 +3495,11 @@ c >>>
       if(amin2.lt.bic(i)) go to 140
       amin2=bic(i)
   140 continue
-ccxx      if(amin.lt.ac(i)) go to 90
+      if(amin.lt.ac(i)) go to 90
          ddd=dabs(amin-ac(i))
          if(ddd.ne.0) ddd=ddd/max(dabs(amin), dabs(ac(i)))
-      if(amin.lt.ac(i) .and. ddd.gt.eps01) go to 90
+cc!!!         if(amin.lt.ac(i) .and. ddd.gt.eps01) go to 90
+         if(ddd.le.eps01) go to 90
 
       amin=ac(i)
       ikm=i
@@ -3182,8 +3554,10 @@ c >>>
 cc      call aicsub (idf,lk3,am(i),nnmm,ax,iw(1),iw(i11),iw(i12),
 cc     1             iw(i13),ly,lp,data,icon,nsamp,n,ikf,ikn,
 cc     2             iw(i14),iw(i15),in)
+
       call aicsub0 (idf,lk3,am(i),nnmm,ax,ly,lp,data,icon,nsamp,n,ikf,
-     1             ikn,ier)
+ccm     1             ikn,ier)
+     1             ikn,ipmin,postsamp,ier)
       if( ier(1).ne.0 ) return
 
       lk4=lk4+1
@@ -3209,6 +3583,10 @@ cxx  215 ca(lk4,j+1)=lc(j)
   220 continue
       if(aminx.ne.amin.and.aminx.le.acmm(lk1)) go to 230
       if(acmm(lk1).le.acmm(lk)) go to 170
+         ddd=dabs(acmm(lk1)-acmm(lk))
+         if(ddd.ne.0) ddd=ddd/max(dabs(acmm(lk1)), dabs(acmm(lk)))
+         if(ddd.le.eps01) go to 170
+
       go to 30
   230 do 240 i=1,lk1
       lb(i)=ld(jj,i)
@@ -3236,7 +3614,7 @@ cxx  215 ca(lk4,j+1)=lc(j)
       if(aminx.le.acmm(i)) go to 280
          daic=dabs(aminx-acmm(i))
          if(daic.ne.0) daic=daic/max(dabs(aminx), dabs(acmm(i)))
-         if(daic.lt.eps01) go to 280
+         if(daic.le.eps01) go to 280
 
       aminx=acmm(i)
       lk3=i
@@ -3290,7 +3668,8 @@ cxx 2002 format(' ikr over ',2i10)
       end
       subroutine bun0(icon,ias1,jj,aic,itemt,ii,itemx,lk5,ca,ica,
 cc     1               nni,c,aa,n,iw,w,data,nsamp,ikr,ikn,ikf,lk77,nnn,in)
-     1               nni,aa,n,data,nsamp,ikr,jkr,ikn,lk77,eps01,ier)
+cm     1               nni,aa,n,data,nsamp,ikr,jkr,ikn,lk77,eps01,ier)
+     1         nni,aa,n,data,nsamp,postsamp,ikr,jkr,ikn,lk77,eps01,ier)
 c
 c     this subroutine re-divides the pooled categories of an
 c     explanatory variable in a multidimensional table to search for
@@ -3306,7 +3685,7 @@ cxx      dimension ier(2)
       integer :: icon(n,20), ias1(2,n,20), jj, itemt(2,n), ii, itemx(n),
      1           lk5, ca(ikr,jkr), ica(ikr), nni(ikr), n, data(nsamp,n), 
      2           nsamp, ikr, jkr, ikn, lk77, ier(2)
-      real(8) :: aic, aa(ikr), eps01
+      real(8) :: aic, aa(ikr), postsamp, eps01
 c
       integer :: lc(n)
       real(8) :: aic1, daic
@@ -3357,13 +3736,13 @@ cc     1          iw(i14),iw(i15),iw(i16),iw(i17),c,iw(i18),iw(i19),
 cc     2          ca,ica,nni,data,icon,w(1),w(j11),w(j12),w(j13),aa,
 cc     3          lk7,ikr,ikn,ikf,n,nsamp,iw(i20),nnn,in)
       call aicp0(n,itemx,lc,lk2,aic1,ca,ica,nni,data,icon,aa,lk7,ikr,
-     1          jkr,ikn,n,nsamp,eps01,ier)
+cm     1          jkr,ikn,n,nsamp,eps01,ier)
+     1          jkr,ikn,n,nsamp,postsamp,eps01,ier)
       if( ier(1).ne.0 ) return
-
       if(aic.le.aic1) go to 10
          daic=dabs(aic-aic1)
          if(daic.ne.0) daic=daic/max(dabs(aic), dabs(aic1))
-         if(daic.lt.eps01) go to 10
+         if(daic.le.eps01) go to 10
 
       aic=aic1
       ii=i
@@ -3397,7 +3776,8 @@ cc 2001 format(' ia or a dimension over ',4i10)
 cc      subroutine aicsub(idf,l,ac,ni,bc,idt,idd,id1,ia,ly,lp,data,icon,
 cc     1                  nsamp,n,ikf,ikn,tc,tr,in)
       subroutine aicsub0(idf,l,ac,ni,bc,ly,lp,data,icon,nsamp,n,ikf,ikn,
-     1 ier)
+cm     1 ier)
+     1 ipmin,postsamp,ier)
 c
 c     this subroutine computes aic values for a (multidimensional)
 c     contingency table.
@@ -3410,9 +3790,13 @@ cxx     1          data(nsamp,n),icon(n,ikn),tc(ikf),tr(ikf),ier(2)
       integer :: idf(n), l, ni, ly(2,n), lp(2), data(nsamp,n),
      1           icon(n,ikn), nsamp, n, ikf, ikn, ier(2)
       real(8) :: ac, bc
-c
       integer :: idt(n), idd(n), id1(2), ia(ikf,2), tc(ikf), tr(ikf)
       real(8) :: expo, t, t1, aaa, a, c
+c-----    modified for missing value handling by M.I.
+      integer :: ipmin
+      real(8) :: postsamp, aicmin
+      data aicmin /1.d50/
+c-----
 c
       t=nsamp
       expo=exp(-1.)
@@ -3435,13 +3819,15 @@ cxx   10 ia(i,j)=0
       do 30 ii=1,l
       lpp=lp(ii)
       if(lpp.eq.0) go to 30
-      do 40 iii=1,lpp
-      lyy=ly(ii,iii)
-      idf1=idf(lyy)
-      idt(iii)=idf1
-      id9=data(i,lyy)
-      idd(iii)=id9
-   40 continue
+c------  
+c      do 40 iii=1,lpp
+c      lyy=ly(ii,iii)
+c      idf1=idf(lyy)
+c      idt(iii)=idf1
+c      id9=data(i,lyy)
+c      idd(iii)=id9
+c   40 continue
+c-------
       do 41 iii=1,lpp
       lyy=ly(ii,iii)
       idf1=idf(lyy)
@@ -3558,19 +3944,28 @@ c-----
       if(ia(ii,1).eq.0) aaa=aaa+expo
       aaa=aaa+ia(ii,1)
   140 continue
-CM.I      a=aaa*log(aaa/(t+t1))+a
-CM.I#ifdef MAICEDEBUG
       if(aaa .gt. 0.d0) a=aaa*log(aaa/(t+t1))+a
-CM.I#endif
   130 continue
       c=c-a
       i61=kkk-ic0-1
       ip=ip-i61
       ni=id1(2)
       if(l.eq.1) ni=0
-cxx      ac = -2*(c-ip)
-      ac = -2.0d0*(c-dble(ip))
+c-----    modified for missing value handling by M.I.
+cm      ac = -2*(c-ip)
+      ac = -2d0*(c*postsamp-dble(ip))
+      if(kk .le. 1) then
+          ac=0.d0
+          ip = 0
+      endif
+c-----
       bc = ac
+c-----    modified for missing value handling by M.I.
+      if(ac .lt. aicmin) then
+        aicmin = ac
+        ipmin = ip
+      endif
+c-----
       return
 cc  120 write(4,2001) iaa,ikf
   120 continue
@@ -3586,7 +3981,9 @@ cc      stop 10
 cc      subroutine aicp1(k,idf,lc,aicc,ni,ly,lp,data,icon,bic,ac,
 cc     1                ikr,ikn,ikf,n,nsamp,iw,nnn,in)
 cxx      subroutine aicp10(k,idf,lc,aicc,data,icon,ikr,ikn,n,nsamp,ier)
-      subroutine aicp10(k,idf,lc,aicc,data,icon,ikn,n,nsamp,ier)
+cm      subroutine aicp10(k,idf,lc,aicc,data,icon,ikn,n,nsamp,ier)
+      subroutine aicp10(k,idf,lc,aicc,data,icon,ikn,n,nsamp,
+     1                  postsamp,ier)
 c
 c     this subroutine computes the value of aic for the output <7>.
 c
@@ -3598,7 +3995,7 @@ cc     1          icon(n,ikn),iw(nnn),data(nsamp,n)
 cxx     1          icon(n,ikn),data(nsamp,n),ier(2)
       integer :: k, idf(n), lc(n), data(nsamp,n), icon(n,ikn),
      1           ikn, n, nsamp, ier(2)
-      real(8) :: aicc
+      real(8) :: aicc, postsamp
 c
       integer :: ni(n), ly(2,n), lp(2)
       real(8) :: bic(n), ac(n)
@@ -3647,8 +4044,9 @@ c <<<
    81 continue
 c >>>
       call aicsub0 (idf,lk3,ac(i),ni(i),bic(i),ly,lp,data,icon,nsamp,n,
-     1             ikf,ikn,ier)
-      if( ier(1).ne.0 ) return
+cm     1             ikf,ikn,ier)
+     1             ikf,ikn,ipmin,postsamp,ier)
+       if( ier(1).ne.0 ) return
 
       aicc=ac(i)
       return
@@ -3672,7 +4070,8 @@ c
 cc      subroutine ac1p (a,ii,total,jx,nd,lc,lcc,lcy,lj,knn,lb,a1,totl,
 cc     1                 tttr,aa,am,kk5,kk2,iw,w,n11,n33,totalc)
       subroutine ac1p (a,ii,total,jx,lc,lcc,lcy,lj,knn,a1,totl,tttr,aa,
-     1                  am,kk5,kk2,n11,n33,totalc,eps01)
+cm     1                  am,kk5,kk2,n11,n33,totalc,eps01)
+     1 am,kk5,kk2,n11,n33,totalc,postsamp,mixk,igd,k,eps01)
 c
 c     this subroutine searches for maice within the possible ways of
 c     categorization of a single explanatory variable in cace
@@ -3687,17 +4086,21 @@ cc     2          knn(n33),lb(n33),iw(1),w(1),totalc(n11)
 cxx     2          knn(n33),lb(n33),totalc(n11)
       integer :: ii, total(n33), jx, lc(n33), lcc(n33), lcy(10,n33),
      1           lj(10), knn(n33), kk5, kk2, n11, n33,
-     2           totalc(n11)
+     2           totalc(n11), mixk
       real(8) :: a(n11,n33), a1(n11,n33), totl(n33), tttr(n33), aa(n33),
-     1           am, eps01
+     1           am, postsamp, eps01
 c
-      integer :: nd(n33), lb(n33)
+      integer :: nd(n33), lb(n33), k, igd(k)
       real(8) :: expo, al, samp, tsmp, tt, aaa, aic, aicmi, aicmm, daic
 c
 cc      common ialim,imax,jalim,jmax,imaxx,jmaxx
 c
 c     substituting exp(-1.0) for zero frequency
 c
+c <<<
+      iix = 1
+      lj = 0
+c >>>
       expo=exp(-1.)
       al=0.
       jj=jx
@@ -3746,7 +4149,10 @@ cxx   23 if(total(j).eq.0) jj0=jj0-1
       lj(1)=1
 c     in=ii*jj-jj-ii+1
       in=ii0*jj0-jj0-ii0+1
-      aa(1)=-2.*(al-in)
+c-----    modified for missing value handling by M.I.
+cm      aa(1)=-2.*(al-in)
+      aa(1)=-2.*(al*postsamp-in)
+c-----
       nd(1)=in
       kx=jj
       knn(1)=kx
@@ -3760,10 +4166,29 @@ c     pooling of adjacent categories of an explanatory variable,
 c     computation of the corresponding aic and the search for maice:
 c       (the number of categories pooled increases in stepwise .)
 c
-      if(kx.le.1) go to 40
+c-----    modified for missing value handling by M.I.
+cm      if(kx.le.1) go to 40
+      do j=1,kx
+       lcc(j)=lc(j)
+      enddo
+      jj = kx
+      k1 = jj
+      aic = aa(1)
+      aicmi = aic
+      do j=1,k1
+       lb(j)=lcc(j)
+      end do
+      if(kx-mixk.le.1) go to 40
+      if(igd(k) .eq. 1) go to 40
+c-----
       aicmi=10.**10
       if(kx.eq.2) go to 50
-      do 60 i=2,kx
+c-----    modified for missing value handling by M.I.
+      kxmiss = kx
+      kxmiss = kxmiss-mixk
+cm      do 60 i=2,kx
+      do 60 i=2,kxmiss
+c-----
       do 70 j=1,kx
       if(j.lt.i) lcc(j)=lc(j)
       if(j.eq.i) lcc(j-1)=lcc(j-1)+lc(j)
@@ -3822,11 +4247,15 @@ cxx  123 if(totl(j2).eq.0) jj0=jj0-1
       if(totl(j2).eq.0) jj0=jj0-1
   123 continue
       in=ii0*jj0-jj0-ii0+1
-      aic=-2.*(al-in)
+c-----    modified for missing value handling by M.I.
+cm      aic=-2.*(al-in)
+      aic=-2.*(al*postsamp-in)
+c-----
+c!!!!!
 ccxx      if(aicmi.lt.aic) go to 60
          daic=dabs(aicmi-aic)
          if(daic.ne.0) daic=daic/max(dabs(aicmi), dabs(aic))
-      if(aicmi.lt.aic .and. daic.gt.eps01) go to 60
+         if(aicmi.lt.aic .and. daic.gt.eps01) go to 60
 
       iix=i-1
       aicmi=aic
@@ -3834,9 +4263,10 @@ ccxx      if(aicmi.lt.aic) go to 60
       lb(j)=lcc(j)
   140 continue
    60 continue
+c
       aicmm=aa(km-1)
       k2=k1
-      if(lc (iix).le.3) go to 150
+      if(lc(iix).le.3) go to 150
       do 160 j=1,k1
       lcc(j)=lb(j)
   160 continue
@@ -3856,7 +4286,8 @@ c     corresponding aic
 c
 cc      call yy(a,lcc,iix,aicmm,jj,total,ii,k1,iw(1),iw(i11),w(1),w(j11),
 cc     1        w(j12),n11,n33,totalc)
-      call yy(a,lcc,iix,aicmm,jj,total,ii,k1,n11,n33,totalc,eps01)
+      call yy(a,lcc,iix,aicmm,jj,total,ii,k1,n11,n33,totalc,postsamp,
+     1         eps01)
 cc      imaxx=imax0
 cc      jmaxx=jmax0
   150 continue
@@ -3864,7 +4295,7 @@ cc      jmaxx=jmax0
       if(aa(km-1).le.aicmm) go to 50
          daic=dabs(aa(km-1)-aicmm)
          if(daic.ne.0) daic=daic/max(dabs(aa(km-1)), dabs(aicmm))
-         if (daic.lt.eps01) go to 50
+         if (daic.le.eps01) go to 50
 
       kx=k1
       km=km-1
@@ -3936,7 +4367,9 @@ cxx 2001 format(' ia or a dimension over ',4i10)
       end
 cc      subroutine yy(a,lc,iix,aicmi,jj,total,ii,k1,lcc,lb,a1,totl,tttr,
 cc     1              n11,n33,totalc)
-      subroutine yy(a,lc,iix,aicmi,jj,total,ii,k1,n11,n33,totalc,eps01)
+cm      subroutine yy(a,lc,iix,aicmi,jj,total,ii,k1,n11,n33,totalc,eps01)
+      subroutine yy(a,lc,iix,aicmi,jj,total,ii,k1,n11,n33,totalc,
+     1              postsamp,eps01)
 c
 c     this subroutine divides the pooled categories of an explanatory
 c     variable and computes the corresponding aic.
@@ -3948,7 +4381,7 @@ cxx      dimension a(n11,n33),a1(n11,n33),total(n33),totl(n33),lc(n33),
 cxx     1          lcc(n33),lb(n33),tttr(n33),totalc(n11)
       integer :: lc(n33), iix, jj, total(n33), ii, k1, n11, n33,
      1           totalc(n11)
-      real(8) :: a(n11,n33), aicmi, eps01
+      real(8) :: a(n11,n33), aicmi, postsamp, eps01
 c
       integer :: lcc(n33), lb(n33)
       real(8) :: a1(n11,n33), totl(n33), tttr(n33), amin, tsmp, samp,
@@ -4033,12 +4466,15 @@ cxx   82 if(totl(j2).eq.0.) jj0=jj0-1
       if(totl(j2).eq.0.) jj0=jj0-1
    82 continue
       in=ii0*jj0-jj0-ii0+1
-      ac=-2.*(al-in)
+c-----    modified for missing value handling by M.I.
+cm      ac=-2.*(al-in)
+      ac=-2.*(al*postsamp-in)
+c-----
       aic=ac
       if(amin.le.aic) go to 40
          daic=dabs(amin-aic)
          if(daic.ne.0) daic=daic/max(dabs(amin), dabs(aic))
-         if(daic.lt.eps01) go to 40
+         if(daic.le.eps01) go to 40
 
       amin=aic
       k2=k1+1
@@ -4049,7 +4485,7 @@ cxx   82 if(totl(j2).eq.0.) jj0=jj0-1
       if(aicmi.le.amin) go to 110
          daic=dabs(aicmi-amin)
          if(daic.ne.0) daic=daic/max(dabs(aicmi), dabs(amin))
-         if(daic.lt.eps01) go to 110
+         if(daic.le.eps01) go to 110
 
       k1=k2
       do 120 i=1,k2

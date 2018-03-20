@@ -3,7 +3,8 @@
 
 \title{Anonymous Binary Data}
 \description{
-  Real data contributed from an anonymous organization. We borrowed the wording of a famous song to hide the true nature of the data.
+  Real data contributed from an anonymous organization. We borrowed the wording
+  of a famous song to hide the true nature of the data.
 }
 \usage{
 data(HelloGoodbye)
