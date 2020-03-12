@@ -2228,7 +2228,8 @@ c-----
      1           itemt(n,2), itemy(n), itemz(ikh,n), ias1(2,n,ikn),
      2           ias2(n,ikn), lca(n), lc(n), ca(ikr,jkr), ica(ikr),
      3           lg(ikr), nni(ikr), itype(n), idt(n), data(nsamp,n),
-     4           icon(n,ikn), icon1(n,ikn), icon2(n,ikn)
+ccd     4           icon(n,ikn), icon1(n,ikn), icon2(n,ikn)
+     4           icon(n,2*ikn), icon1(n,ikn), icon2(n,ikn)
       real(8) :: aa(ikr), aicmm(ikh), pbcc(n11), aic, aicm, acmmm,
      1           aminx, aaaa, daic, epsxx
 cc      character*4 fmt(20),fm1(5),fm2(5),fm3(4),fm4(10),fm11(10)
@@ -3380,7 +3381,8 @@ cxx     1          lb(n),ni(n),idf(n),l1(n),l2(n),ly(2,n),lp(2),ac(n),
 cxx     2          lz(n),aa(ikr),icon(n,ikn),
 cxx     3          ca(ikr,jkr),ica(ikr),nni(ikr),data(nsamp,n),ier(2)
       integer :: k, idf(n), lc(n), lk2, ca(ikr,jkr), ica(ikr), nni(ikr),
-     1           data(nsamp,n), icon(n,ikn), lk7, ikr, jkr, ikn, n,
+ccd     1           data(nsamp,n), icon(n,ikn), lk7, ikr, jkr, ikn, n,
+     1           data(nsamp,n), icon(n,2*ikn), lk7, ikr, jkr, ikn, n,
      2           nsamp, ier(2)
       real(8) :: aicc, aa(ikr), postsamp,eps01
 c
@@ -3682,7 +3684,8 @@ cxx      dimension icon(n,20),ias1(2,n,20),itemx(n),data(nsamp,n),lc(n),
 cc     1          c(10,n),ca(ikr,10),ica(ikr),nni(ikr),aa(ikr),itemt(2,n),
 cxx     1           ca(ikr,jkr),ica(ikr),nni(ikr),aa(ikr),itemt(2,n)
 cxx      dimension ier(2)
-      integer :: icon(n,20), ias1(2,n,20), jj, itemt(2,n), ii, itemx(n),
+ccd      integer :: icon(n,20), ias1(2,n,20), jj, itemt(2,n), ii, itemx(n),
+      integer :: icon(n,2*ikn), ias1(2,n,ikn), itemt(2,n), itemx(n),
      1           lk5, ca(ikr,jkr), ica(ikr), nni(ikr), n, data(nsamp,n), 
      2           nsamp, ikr, jkr, ikn, lk77, ier(2)
       real(8) :: aic, aa(ikr), postsamp, eps01
@@ -3788,7 +3791,8 @@ cxx      integer data,tc,tr
 cxx      dimension idt(n),idd(n),id1(2),ia(ikf,2),idf(n),lp(2),ly(2,n),
 cxx     1          data(nsamp,n),icon(n,ikn),tc(ikf),tr(ikf),ier(2)
       integer :: idf(n), l, ni, ly(2,n), lp(2), data(nsamp,n),
-     1           icon(n,ikn), nsamp, n, ikf, ikn, ier(2)
+ccd     1           icon(n,ikn), nsamp, n, ikf, ikn, ier(2)
+     1           icon(n,2*ikn), nsamp, n, ikf, ikn, ier(2)
       real(8) :: ac, bc
       integer :: idt(n), idd(n), id1(2), ia(ikf,2), tc(ikf), tr(ikf)
       real(8) :: expo, t, t1, aaa, a, c
@@ -3993,7 +3997,8 @@ cxx      integer data
 cxx      dimension lc(n),bic(n),ni(n),idf(n),ly(2,n),lp(2),ac(n),
 cc     1          icon(n,ikn),iw(nnn),data(nsamp,n)
 cxx     1          icon(n,ikn),data(nsamp,n),ier(2)
-      integer :: k, idf(n), lc(n), data(nsamp,n), icon(n,ikn),
+ccd      integer :: k, idf(n), lc(n), data(nsamp,n), icon(n,ikn),
+      integer :: k, idf(n), lc(n), data(nsamp,n), icon(n,2*ikn),
      1           ikn, n, nsamp, ier(2)
       real(8) :: aicc, postsamp
 c

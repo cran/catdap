@@ -12,9 +12,6 @@ catdap1 <- function(cdata, response.names = NULL, plot = 1, ask = TRUE) {
 #   cdata                    # original data
     n <- dim(cdata)[2]       # total number of variable
     nsamp <- dim(cdata)[1]   # sample size
-    catdata <- array(0, dim=c(n, nsamp))
-    for (i in 1:n)
-      catdata[i, ] <- cdata[, i]
 
 #   title                   # variable names
     title <- names(cdata)
@@ -22,6 +19,12 @@ catdap1 <- function(cdata, response.names = NULL, plot = 1, ask = TRUE) {
       title <- rep(1:n)
       title <- as.character(title)
     }
+
+    catdata <- t(cdata)
+    for (i in 1:n)
+      if (is.numeric(catdata[i, ]) == FALSE && is.factor(catdata[i, ]) == FALSE)
+        catdata[i, ] <- as.factor(catdata[i, ])
+
 
     dname <- list()
     for (i in 1:n)
@@ -117,7 +120,7 @@ catdap01 <- function(cdata, title, dname, response.names) {
             ires <- c(ires, j)
           }
       if (m == 0)
-        stop(" Error : response variable name is wrong.")
+        stop(" Response variable name is wrong.")
       if (m < l)
         ier <- 3001
       l <- m
@@ -134,10 +137,10 @@ catdap01 <- function(cdata, title, dname, response.names) {
 #   minmax
     item1 <- rep(0, n)
     item2 <- rep(0, n)
-    for (i in 1:n)
+    for (i in 1:n) {
       item1[i] <- as.integer(min(cdata[i, ]))
-    for (i in 1:n)
       item2[i] <- as.integer(max(cdata[i, ]))
+    }
     nc <- rep(0, n)
     for (i in 1:n)
       nc[i] <- item2[i] - item1[i] + 1
@@ -195,13 +198,11 @@ catdap01 <- function(cdata, title, dname, response.names) {
       i2 <- nc[ires[i]]
       cross.table[[i]] <- list()
       for (j in 1:n) {
-        if (j == ires[i]){
-          cross.table[[i]][[j]] <- NULL
-        } else {
+        cross.table[[i]][[j]] <- list()
+        cross.table[[i]][[j]]$res <- title[ires[i]]
+        if (j != ires[i]){
           j1 <- 1
           j2 <- nc[j]
-          cross.table[[i]][[j]] <- list()
-          cross.table[[i]][[j]]$res <- title[ires[i]]
           cross.table[[i]][[j]]$n <- array(ia[j1:j2, i1:i2, i, j], dim=c(j2,i2),
             dimnames = list(dname[[j]], dname[[ires[i]]]))
           cross.table[[i]][[j]]$p <- array(p[j1:j2, i1:i2, i, j], dim=c(j2,i2))
@@ -231,29 +232,31 @@ print.catdap1 <- function(x,...) {
     l <- dim(x$aic)[1]
     n <- dim(x$aic)[2]
     ires <- rep(0, l)
+    dl22 <- "----------------------"
+    dl10 <- "----------"
+    bl14 <- "              "
+    bl8 <- "        "
 
 #--------------------------------------------------------------#
-    cat("\n < Summary of AIC's for the two-way tables >\n\n")
+    message("\n < Summary of AIC's for the two-way tables >\n")
 #--------------------------------------------------------------#
-    cat("         Explanatory \n           variables ")
+    message("         Explanatory")
+    message("           variables", appendLF = FALSE)
     for (i in 1:l)
-      cat(sprintf("\t%20s", x$tway.table[[i]][[1]]$res))
-    cat("\n")
-    for (i in 1:(l+2))
-      cat("---------------------")
-    cat("\n")
+      message(gettextf("  %20s", x$tway.table[[i]][[1]]$res), domain = NA, appendLF = FALSE)
+    message("\n", rep(dl10, 2), rep(dl22, l))
     for (jj in 1:n) {
-      cat(sprintf("%20s", x$title[jj]))
+      message(gettextf("%20s", x$title[jj]), domain = NA, appendLF = FALSE)
       for (j in 1:l) {
         if (is.na(x$aic[j,jj]) == TRUE) {
-          cat("\t                 -  ")
+          message(bl14, "     -  ", appendLF = FALSE)
           ires[j] <- jj
         } else {
           if (is.null(x$aic[j,jj]) == FALSE)
-            cat(sprintf("\t            %8.2f", x$aic[j,jj]))
+            message(bl14, gettextf("%8.2f", x$aic[j,jj]), domain = NA, appendLF = FALSE)
         }
       }
-      cat("\n")
+      message("")
     }
 
     nc <- n-1
@@ -283,35 +286,35 @@ print.catdap1 <- function(x,...) {
       i3 <- ires[i]
       i2 <- item[i3]
 #------------------------------------------------------------------------------#
-      cat("\n\n < List of explanatory variables arranged in ascending order of AIC >")
+      message("\n\n < List of explanatory variables arranged in ascending order of AIC >")
 #------------------------------------------------------------------------------#
-      cat(sprintf("\n\n Response variable  : %s\n\n", x$title[i3]))
-      cat("     No.\t  Explanatory\tNumber of categories\t  A I C\t\tDifference of AIC\n")
-      cat("        \t  variable   \tof exp. var.\n")
-      for (j in 1:9)
-        cat("----------")
-      cat("\n")
+      message(gettextf("\n Response variable  : %s\n", x$title[i3]), domain = NA)
+      message("  No.         Explanatory     Number of       A I C     Difference")
+      message(bl14, "variables       categories", bl8, bl8, "of AIC")
+      message(rep(dl10,7))
+
       as <- 0.0
       for (j in 1:nc) {
         nv <- x$aic.order[i, j]
         aic <- x$aic[i, nv]
         if (j != 1)
           as <- aic - as
-        cat(sprintf("%8i %20s\t%8i\t\t%8.2f\t%8.2f\n", j,x$title[nv], item[nv],
-            aic, as))
+        message(gettextf("%5i%20s     %8i     %8.2f     %8.2f", j,x$title[nv], item[nv],
+            aic, as), domain = NA)
         as <- aic
       }  # for (j in 1:nc) end
 #--------------------------------------------------------------------------#
-      cat("\n < Two-way tables arranged in ascending order of AIC >\n\n")
+      message("\n\n < Two-way tables arranged in ascending order of AIC >\n")
 #--------------------------------------------------------------------------#
 
-      cat(sprintf("\t\t\t\t( %s )\n", x$title[i3]))
+      message(gettextf("\t\t\t\t\t( %s )", x$title[i3]), domain = NA)
       nsamp <- 0
       ptt <- 0.0
       pt <- rep(0, i2)
-      cat("        ")
+###D      message(bl8, "  ", appendLF = FALSE)
+      message(bl8, appendLF = FALSE)
       for (ii in i1:i2) {
-        cat(sprintf("\t%s\t", dname[[i3]][ii]))
+        message(gettextf("%18s", dname[[i3]][ii]), domain = NA, appendLF = FALSE)
         nsamp <- nsamp + x$total[[i3]][ii]
       }
       for (ii in i1:i2) {
@@ -319,27 +322,29 @@ print.catdap1 <- function(x,...) {
         ptt <- ptt + pt[ii]
       }
 
-      cat("\t\tTotal\n")
+      message("             Total")
       for (j in 1:nc) {
         nv <- x$aic.order[i, j]
         j1 <- 1
         j2 <- item[nv]
-        cat(sprintf("( %s )\n", x$title[nv]))
+        message(gettextf("( %s )", x$title[nv]), domain = NA)
         for( k in j1:j2) {
-          cat(sprintf("%s\t", dname[[nv]][k]))
+          message(gettextf("%10s", dname[[nv]][k]), domain = NA, appendLF = FALSE)
           tc <- 0
           for (ii in i1:i2)
-            cat(sprintf("%8i ( %5.1f )", x$tway.table[[i]][[nv]]$n[k,ii],
-                x$tway.table[[i]][[nv]]$p[k,ii]))
-          cat(sprintf("%8i ( %5.1f )\n", x$total[[nv]][k], ptt))
+            message(gettextf("% 8i ( %5.1f )", x$tway.table[[i]][[nv]]$n[k,ii],
+                x$tway.table[[i]][[nv]]$p[k,ii]), domain = NA, appendLF = FALSE)
+          message(gettextf("% 8i ( %5.1f )", x$total[[nv]][k], ptt), domain = NA)
         }
-        cat("Total\t")
-        for (ii in i1:i2) cat(sprintf("%8i ( %5.1f )", x$total[[i3]][ii], pt[ii]))
-        cat(sprintf("%8i ( %5.1f )\n\n", nsamp, ptt))
+        message("     Total", appendLF = FALSE)
+        for (ii in i1:i2)
+          message(gettextf("%8i ( %5.1f )", x$total[[i3]][ii], pt[ii]), domain = NA, appendLF = FALSE)
+        message(gettextf("%8i ( %5.1f )\n", nsamp, ptt), domain = NA)
       }  # for (j in 1:nc) end
     }  # for (i in 1:l) end
 
-    if (x$ier == 3001)  cat(" caution : some response variable name is wrong.\n")
+    if (x$ier == 3001)
+      message(" caution : some response variable name is wrong.")
 
 }
 
@@ -425,7 +430,7 @@ catdap2 <-
       if (response.name == title[i])
         ires <- i
     if (ires == 0)
-      stop(" Error : response variable name is wrong.")
+      stop(" Response variable name is wrong.")
 
 #   accuracy                 # accuracy of measurement
     xx <- accuracy
@@ -467,18 +472,17 @@ catdap2 <-
           item2[i] <- -pool[ires]
           if (xx[i] == 0) {
             xx[i] <- (max(cdata[i, ]) - min(cdata[i, ])) / 50
-            cat(sprintf("\n Warning : %d-th accuracy is corrected to %8.2f\n",
-                i, xx[i]))
+            warning(gettextf(" %d-th accuracy is corrected to %8.2f", i, xx[i]),
+                    domain = NA)
           }
           pool[i] <- 0
-        } else if (pool[i] < 2) {
-          stop(" Error : 'pool' is less than 0 for the response variable.")
-
-        } else {   # categorical response variable
+        } else if (pool[i] == 2) {   # categorical response variable
           item1[i] <- as.integer(min(cdata[i, ]))
           item2[i] <- as.integer(max(cdata[i, ]))
           pool[i] <- 2
           xx[i] <- 0
+        } else {
+          stop(" 'pool' is less than 0 for the response variable.")
         }
       } else { # if (i != ires)
         if (pool[i] == 2) {
@@ -490,8 +494,8 @@ catdap2 <-
             pool[i] <- 1
           if (xx[i] == 0) {   # continuous explanatory variable
             xx[i] <- (max(cdata[i, ]) - min(cdata[i, ])) / 50
-            cat(sprintf("\n Warning : %d-th accuracy is corrected to %8.2f\n",
-                i, xx[i]))
+            warning(gettextf(" %d-th accuracy is corrected to %8.2f", i, xx[i]),
+                    domain = NA)
           }
           item1[i] <- 0
           item2[i] <- 0
@@ -528,9 +532,9 @@ catdap2 <-
     if (is.null(nvar))
       nvar <- n
     if (nvar <2)
-      stop(" Error : 'nvar' is greater than or equal to 2.")
+      stop(" 'nvar' is greater than or equal to 2.")
     if (nvar > n)
-      stop(" Error : 'nvar' is less than or equal to the number of variable.")
+      stop(" 'nvar' is less than or equal to the number of variable.")
     novv <- 0
     for (i in 1:n)
       if (pool[i] == 0 || pool[i] > 0)
@@ -548,9 +552,9 @@ catdap2 <-
       for (i in 1:lexp) {
         nex <- length(additional.output[[i]])
         if (nex > (nov-1)) {
-          cat(sprintf("\n Warning : the number of explanatory variable names for additional output is less than nvar %i.\n\n", nov))
+          warning(gettextf("the number of explanatory variable names for additional output is less than nvar %i.", nov), domain = NA)
         } else if (nex > max((nov-1),8)) {
-          cat(sprintf("\n Warning : the number of explanatory variable names for additional output is less than %i.\n\n", max((nov-1), 9)))
+          warning(gettextf("the number of explanatory variable names for additional output is less than %i.", max((nov-1), 9)), domain = NA)
         } else {
           icl <- icl + 1
           icls[1,icl] <- nex + 1
@@ -565,7 +569,7 @@ catdap2 <-
                 }
               }
             if (m != nex) {
-              cat("\n Warning : explanatory variable name for additional output is wrong.\n\n")
+              warning("explanatory variable name for additional output is wrong.")
               icl <- icl - 1
             }
         }
@@ -744,13 +748,16 @@ catdap2 <-
       }
 
       cexp <- list()
+      vnames <- list()
       for (i in 1:nsub) {
         if (aorder[i] > 0) {
           j <- aorder[i] + 1
           k <- nv[i] + 1
           cexp[[i]] <- aic.order[caa[j, 2:k] - 1]
+          vnames[[i]] <- title[cexp[[i]]]
         } else {
           cexp[[i]] <- 0
+          vnames[[i]] <- NULL
         }
       }
 
@@ -922,13 +929,13 @@ catdap2 <-
       }  # if (nsub > 2) end
 
       catdap2.out <- list(title = title, accuracy = xx, ires = ires,
-                      print.level = print.level, tway.table = cross.table,
-                      total = total, interval = interval, base.aic = baic,
-                      aic = aic, aic.order = aic.order, nsub = nsub, nv = nv,
-                      ncc = ncc, aaic = aaic, cexp = cexp,
-                      ctable = list(n = ctbl, p = ctbl.p, cnum = ctbl.cnum),
-                      ctable.interval = list(exvar = cexvar, range = cinterval),
-                      caic = caic, missing = nmiss)
+           print.level = print.level, tway.table = cross.table, total = total,
+           interval = interval, base.aic = baic, aic = aic,
+           aic.order = aic.order, nsub = nsub, subset = list(nv = nv, ncc = ncc,
+           aic = aaic, exv = cexp, vname = vnames),
+           ctable = list(n = ctbl, p = ctbl.p, cnum = ctbl.cnum), 
+           ctable.interval = list(exvar = cexvar, range = cinterval),
+           caic = caic, missing = nmiss)
 
       if (plot != 0)
         plot.catdap2(catdap2.out, plot)    
@@ -945,7 +952,7 @@ catdap2 <-
           ier[2] <- -999
         }  # if (kkj < ikkkm) end
       }  # if (ier[1] == 2048) end
-      catdap2.out <- list(ier=ier)
+      catdap2.out <- list(ier = ier)
     }
 
     class(catdap2.out) <- "catdap2"
@@ -1061,9 +1068,9 @@ addaicm <-
           ier[2] <- -999
         }  # if (kkj < ikkkm) end
         if (ier[2] == -999)
-          cat("Error : Working area for second contingency table is too short. pa1 can no longer set a larger value.\n")
+          stop(" Working area for second contingency table is too short. pa1 can no longer set a larger value.")
         if ( ier[2] != -999)
-          cat(sprintf(" Error : Working area for second contingency table is too short, try pa1= %i.\n", pa1n))
+          stop(gettextf(" Working area for contingency table is too short, try pa1== %i.", pa1n), domain = NA)
       }  # if (ier[1] == 2048) end
       return(list(ier = ier[1]))
     }
@@ -1076,15 +1083,16 @@ print.catdap2 <- function(x, ...) {
 #==================================
 
     eps <- 1.0e-10   # an error tolerance in the difference of AIC's
+    dl18 <- "------------------"
     dl10 <- "----------"
-    bl7 <- "       "
-    bl14 <- "              "
+    bl15 <- "               "
+    bl8 <- "        "
 
     if (is.null(x$ier[1])) {
       n <- length(x$title)
       res <- x$ires
       lk <- x$nsub
-      ktt <- max(x$nv)
+      ktt <- max(x$subset$nv)
 
       dname <- list()
       nc <- rep(0, n)
@@ -1097,20 +1105,16 @@ print.catdap2 <- function(x, ...) {
         nc[i] <- length(dname[[i]])
 
 #----------------------------------------------------------------------------#
-      cat("\n<< List of single explanatory variables (arranged in ascending order of AIC) >>\n")
+      message("\n<< List of single explanatory variables (arranged in ascending order of AIC) >>\n")
 #----------------------------------------------------------------------------#
-      cat(sprintf(" Response variable : %s \t(base AIC = %8.2f)\n", x$title[res],
-          x$base.aic))
-      for (nrep in 1:8)
-        cat(dl10)
-      cat("\n")
-      cat(bl14, bl14, "Number of\n")
-      cat(bl7, "      Explanatory     categories", bl14, " Difference\n")
-      cat(bl7, "      variables       of exp. var.    A I C      of AIC",
-          bl7, "Weight\n")
-      for (nrep in 1:8)
-        cat(dl10)
-      cat("\n")
+      message(gettextf(" Response variable : %s \t(base AIC = %8.2f)", x$title[res],
+          x$base.aic), domain = NA)
+      message(rep(dl10,8))
+      message(rep(bl15, 2), "Number of")
+      message(bl8, "      Explanatory     categories", bl15, "Difference")
+      message(bl8, "      variables       of exp. var.    A I C      of AIC",
+          bl8, "Weight")
+      message(rep(dl10,8))
 
       nrank <- 0
       daic2 <- 1.0e+5
@@ -1133,15 +1137,15 @@ print.catdap2 <- function(x, ...) {
 
         if (daic2 > eps)
           nrank <- i
-        cat(sprintf("%5i", nrank))
-        cat(sprintf("%20s", x$title[idx]))
-        cat(sprintf("     %8i     %8.2f     %8.2f     %8.2f\n", nc[idx],
-            x$aic[idx], daic, w))
+        message(gettextf("%5i", nrank), domain = NA, appendLF = FALSE)
+        message(gettextf("%20s", x$title[idx]), domain = NA, appendLF = FALSE)
+        message(gettextf("     %8i     %8.2f     %8.2f     %8.2f", nc[idx],
+            x$aic[idx], daic, w), domain = NA)
         aaa2 <- aaaa
       }
 
 #-----------------------------------------------------------------------#
-      cat("\n\n<< Two-way tables arranged in ascending order of AIC >>\n\n")
+      message("\n\n<< Two-way tables arranged in ascending order of AIC >>\n")
 #-----------------------------------------------------------------------#
 
       i <- 1
@@ -1161,7 +1165,8 @@ print.catdap2 <- function(x, ...) {
         print.Note(x$title[res], x$accuracy[res], x$interval[[res]], dname[[res]],
                    i1, i2, ntype, nmiss)
 
-      cat(sprintf("                     ( %15s )\n", x$title[res]))
+      message(gettextf("                     ( %15s )", x$title[res]), domain = NA)
+
       for (j in 1:(n-1)){
         j3 <- x$aic.order[j]
         j1 <- 1
@@ -1171,32 +1176,31 @@ print.catdap2 <- function(x, ...) {
         if (ntype==1 && nmiss[1]==0)
           ntype <- 0
 
-        cat(sprintf("                 ", x$title[j3]))
+        message(bl15, "    ", appendLF = FALSE)
         for (ii in i1:i2)
-          cat(sprintf("%15s   ", dname[[res]][ii]))
-
-        cat("          Total\n")
-        cat(sprintf("( %15s )\n", x$title[j3]))
+          message(gettextf("%15s   ", dname[[res]][ii]), domain = NA, appendLF = FALSE)
+        message("          Total")
+        message(gettextf("( %15s )", x$title[j3]), domain = NA)
         for (ii in i1:(i2+2))
-          cat("-----------------")
-        cat("-----\n")
+          message(dl18, appendLF = FALSE)
+        message("")
         for (k in j1:j2) {
           ptr <- 0
           if (x$total[[j3]][k] != 0)
             ptr <- (x$total[[j3]][k] * 100.) / x$total[[j3]][k]
-          cat(sprintf("%8i           ", k))
+          message(gettextf("%8i          ", k), domain = NA, appendLF = FALSE)
           for (ii in i1:i2)
-            cat(sprintf("%8i ( %5.1f )", x$tway.table[[j3]]$n[k,ii],
-                x$tway.table[[j3]]$p[k,ii]))
-          cat(sprintf("%8i ( %5.1f )\n", x$total[[j3]][k], ptr))
+            message(gettextf("%8i ( %5.1f )", x$tway.table[[j3]]$n[k,ii],
+                x$tway.table[[j3]]$p[k,ii]), domain = NA, appendLF = FALSE)
+          message(gettextf("%8i ( %5.1f )", x$total[[j3]][k], ptr), domain = NA)
         }  # for (k in j1:j2) end
 
         for (ii in i1:(i2+2))
-        cat("-----------------")
-        cat("-----\n     Total         ")
+          message(dl18, appendLF = FALSE)
+        message("\n     Total        ", appendLF = FALSE)
         for (ii in i1:i2)
-          cat(sprintf("%8i ( %5.1f )", x$total[[res]][ii], ptc[ii]))
-        cat(sprintf("%8i ( %5.1f )\n\n", nsamp, ptt))
+          message(gettextf("%8i ( %5.1f )", x$total[[res]][ii], ptc[ii]), domain = NA, appendLF = FALSE)
+        message(gettextf("%8i ( %5.1f )", nsamp, ptt), domain = NA)
 
         nmiss <- x$missing[[j3]]
         ntype <- length(nmiss)
@@ -1209,7 +1213,7 @@ print.catdap2 <- function(x, ...) {
 
       if (x$print.level == 0) {
 #-----------------------------------------------------------------------------#
-        cat("\n<< AIC's of the models with k explanatory variables (k=1,2,...) >>\n")
+        message("\n<< AIC's of the models with k explanatory variables (k=1,2,...) >>")
 #-----------------------------------------------------------------------------#
         for (j in 1:ktt) {
           ijk <- 0
@@ -1217,29 +1221,25 @@ print.catdap2 <- function(x, ...) {
           daic2 <- 1.0e+5
 
           for (ij in 1:lk) {
-            lk4 <- x$nv[ij]
+            lk4 <- x$subset$nv[ij]
             if (lk4 == j) {
-              aaaa <- x$aaic[ij]
+              aaaa <- x$subset$aic[ij]
               if (ijk == 0)
-                aaic1 <- x$aaic[ij]
+                aaic1 <- x$subset$aic[ij]
               daic <- aaaa - aaic1
               w <- exp(-1. / 2 * daic)
               ijk <- ijk + 1
 
               if (ijk == 1) {
-                cat(sprintf("\n Number of explanatory variables = %i\n", j))
-                for (nrep in 1:8)
-                  cat(dl10)
-                cat("\n")
-                cat(bl14, bl14, "Number of\n")
-                cat(bl7, "      Explanatory     categories", bl14,
-                    " Difference\n")
-                cat(bl7,
+                message(gettextf("\n Number of explanatory variables = %i", j), domain = NA)
+                message(rep(dl10, 8), appendLF = FALSE)
+                message("\n", rep(bl15, 2), "Number of")
+                message(bl8, "      Explanatory     categories", bl15,
+                        " Difference")
+                message(bl8,
                     "      variables       of exp. var.    A I C      of AIC",
-                    bl7, "Weight\n")
-                for (nrep in 1:8)
-                  cat(dl10)
-                cat("\n")
+                    bl8, "Weight")
+                message(rep(dl10, 8))
               }
 
               if (ijk > 1) {
@@ -1253,20 +1253,17 @@ print.catdap2 <- function(x, ...) {
               if (daic2 > eps)
                 nrank <- ijk
               if (lk4 == 1 || lk4 > 1)  {
-                cat(sprintf("%5i", nrank))
-                lkk <- x$cexp[[ij]][1]
-                cat(sprintf("%20s", x$title[lkk]))
-                cat(sprintf("     %8i", x$ncc[ij]))
-                cat(sprintf("     %8.2f", x$aaic[ij]))
-                cat(sprintf("     %8.2f", daic))
-                cat(sprintf("     %8.2f\n", w))
+                message(gettextf("%5i", nrank), domain = NA, appendLF = FALSE)
+                message(gettextf("%20s", x$subset$vname[[ij]][1]), domain = NA, appendLF = FALSE)
+                message(gettextf("     %8i", x$subset$ncc[ij]), domain = NA, appendLF = FALSE)
+                message(gettextf("     %8.2f", x$subset$aic[ij]), domain = NA, appendLF = FALSE)
+                message(gettextf("     %8.2f", daic), domain = NA, appendLF = FALSE)
+                message(gettextf("     %8.2f", w), domain = NA)
               }
 
               if (lk4 == 2 || lk4 > 2)
-                for (i in 2:lk4) {
-                  lkk <- x$cexp[[ij]][i]
-                  cat(sprintf("     %20s\n", x$title[lkk]))
-                }
+                for (i in 2:lk4)
+                  message(gettextf("     %20s", x$subset$vname[[ij]][i]), domain = NA)
 
             }  # if (lk4 == j) end
             aaic2 <- aaaa
@@ -1275,21 +1272,18 @@ print.catdap2 <- function(x, ...) {
       }  # if (x$print.level == 0) end
 
 #-------------------------------------------------------------------#
-      cat("\n\n<< Summary of subsets of explanatory variables >>\n\n")
+      message("\n<< Summary of subsets of explanatory variables >>")
 #-------------------------------------------------------------------#
 
-      cat(sprintf(" Response variable : %s\n\n", x$title[res]))
-      for (nrep in 1:8)
-        cat(dl10)
-      cat("\n")
-      cat(bl14, bl14, "Number of\n")
-      cat(bl7, "      Explanatory     categories", bl14, " Difference\n")
-      cat(bl7,
+      message(gettextf("\n Response variable : %s", x$title[res]), domain = NA)
+      message(rep(dl10, 8), appendLF = FALSE)
+      message("\n", rep(bl15, 2), "Number of")
+      message(bl8, "      Explanatory     categories", bl15, " Difference")
+      message(bl8,
           "      variables       of exp. var.    A I C      of AIC",
-          bl7, "Weight\n")
-      for (nrep in 1:8)
-        cat(dl10)
-      cat("\n")
+          bl8, "Weight")
+      message(rep(dl10, 8))
+
       ijk <- 0
       nrank <- 0
       daic2 <- 1.0e+5
@@ -1299,11 +1293,11 @@ print.catdap2 <- function(x, ...) {
       if (x$print.level == 1)
         lsub <- min(lk, 30)
       for (ij in 1:lsub) {
-        lk4 <- x$nv[ij]
+        lk4 <- x$subset$nv[ij]
         if (lk4 > 0) {
-          aaaa <- x$aaic[ij]
+          aaaa <- x$subset$aic[ij]
           if (ijk == 0 )
-            aaic1 <- x$aaic[ij]
+            aaic1 <- x$subset$aic[ij]
           daic <- aaaa - aaic1
           w <- exp(-1. / 2 * daic)
           ijk <- ijk + 1
@@ -1317,25 +1311,23 @@ print.catdap2 <- function(x, ...) {
 
           if (daic2 > eps)
             nrank <- ijk
-          cat(sprintf("%5i", nrank))
-          lkk <- x$cexp[[ij]][1]
-          cat(sprintf("%20s", x$title[lkk]))
-          cat(sprintf("     %8i", x$ncc[ij]))
-          cat(sprintf("     %8.2f", x$aaic[ij]))
-          cat(sprintf("     %8.2f", daic))
-          cat(sprintf("     %8.2f\n", w))
+          message(gettextf("%5i", nrank), domain = NA, appendLF = FALSE)
+          message(gettextf("%20s", x$subset$vname[[ij]][1]), domain = NA, appendLF = FALSE)
+          message(gettextf("     %8i", x$subset$ncc[ij]), appendLF = FALSE)
+          message(gettextf("     %8.2f", x$subset$aic[ij]), domain = NA, appendLF = FALSE)
+          message(gettextf("     %8.2f", daic), domain = NA, appendLF = FALSE)
+          message(gettextf("     %8.2f", w), domain = NA)
 
           if (lk4 == 2 || lk4 > 2)
             for (i in 2:lk4) {
-              lkk <- x$cexp[[ij]][i]
-              cat(sprintf("     %20s\n", x$title[lkk]))
+              message(gettextf("     %20s", x$subset$vname[[ij]][i]), domain = NA)
             }
           aaic2 <- aaaa
 
         } else if (aaic2 < 0) {
           ijk <- ijk + 1
-          cat(sprintf("%5i", ijk))
-          cat("               - - -")
+          message(gettextf("%5i", ijk), domain = NA, appendLF = FALSE)
+          message("               - - -", appendLF = FALSE)
           aaaa <- 0
           if (ijk == 1 ) {
             aaic1 <- 0
@@ -1345,10 +1337,10 @@ print.catdap2 <- function(x, ...) {
             daic <- aaaa - aaic1
             w <- exp(-1. / 2 * daic)
           }
-          cat(sprintf("     %8i", 0))
-          cat(sprintf("     %8.2f", 0.0))
-          cat(sprintf("     %8.2f", daic))
-          cat(sprintf("     %8.2f\n", w))
+          message(gettextf("     %8i", 0), domain = NA, appendLF = FALSE)
+          message(gettextf("     %8.2f", 0.0), domain = NA, appendLF = FALSE)
+          message(gettextf("     %8.2f", daic), domain = NA, appendLF = FALSE)
+          message(gettextf("     %8.2f", w), domain = NA)
 
           aaic2 <- aaaa
         }  # if (lk4 > 0) end
@@ -1365,18 +1357,18 @@ print.catdap2 <- function(x, ...) {
         if (k > icl) {
 
 #------------------------------------------------------------------------------#
-          cat("\n\n<< Contingency table constructed by the best subset of explanatory variables >>\n\n")
+          message("\n\n<< Contingency table constructed by the best subset of explanatory variables >>\n")
 #------------------------------------------------------------------------------#
           if (lk4 == 0)
             icflg <- 0
           idm <- 0
         } else {
 #------------------------------------------------------------------------------#
-          cat("\n\n<< The output of the additional analysis >>\n\n")
+          message("\n\n<< The output of the additional analysis >>\n")
 #------------------------------------------------------------------------------#
         }
 
-        cat(sprintf(" X(1) : %s\n", x$title[res]))
+        message(gettextf(" X(1) : %s", x$title[res]), domain = NA)
         etitle <- list()
         if (lk4 > 0) {
           j1 <- 1
@@ -1384,13 +1376,13 @@ print.catdap2 <- function(x, ...) {
           mc <- rep(0, lk4)
           for (i in 1:lk4) {
             lkk <- x$ctable.interval$exvar[[k]][i]
-            cat(sprintf(" X(%i) : %s\n", (i+1), x$title[lkk]))
+            message(gettextf(" X(%i) : %s", (i+1), x$title[lkk]), domain = NA)
             etitle <- c(etitle, x$title[lkk])
             j2[i] <- length(x$ctable.interval$range[[k]][[i]])
             if (x$accuracy[lkk] > 0)
               j2[i] <- j2[i] - 1
           }
-          cat("\n")
+          message("")
 
           mp <- 1
           for (i in 1:lk4)
@@ -1400,21 +1392,23 @@ print.catdap2 <- function(x, ...) {
             for (i in 2:lk4)
               idm <- c(idm, j2[i])
           for (i in 1:lk4)
-            cat(" X  ")
+            message(" X  ", appendLF = FALSE)
         }   # if (lk4 > 0) end
 
-        cat("\t\t response variable X(1)\n")
+        message("\t\t response variable X(1)")
 
         if (lk4 > 0)
           for (i in 1:lk4)
-            cat(sprintf("(%i) ", (i+1)))
+            message(gettextf("(%i) ", (i+1)), domain = NA, appendLF = FALSE)
+        if (lk4 == 1)
+          message("    ", appendLF = FALSE)
 
         for (i in i1:i2)
-          cat(sprintf("           %3i      ", i))
-        cat("     Total\n")
-        for (ii in i1:(i2+2))
-          cat("-----------------")
-        cat("\n")
+          message(gettextf("           %3i    ", i), domain = NA, appendLF = FALSE)
+        message(bl8, "  Total")
+        for (ii in i1:(i2+1))
+          message(dl18, appendLF = FALSE)
+        message(rep("----", max(2,lk4)))
 
         idf <- TRUE
         if (lk4> 0) {
@@ -1424,27 +1418,32 @@ print.catdap2 <- function(x, ...) {
           idf <- is.null(dim(x$ctable$cnum[[k]])) 
           for (i in 1:np) {
             if (idf == TRUE)
-              cat(sprintf(" %2i ", x$ctable$cnum[[k]][i]))
+              message(gettextf(" %2i ", x$ctable$cnum[[k]][i]), domain = NA, appendLF = FALSE)
             if (idf == FALSE)
               for (j in 1:lk4)
-                cat(sprintf(" %2i ", x$ctable$cnum[[k]][i,j]))
+                message(gettextf(" %2i ", x$ctable$cnum[[k]][i,j]), domain = NA, appendLF = FALSE)
+            if (lk4 == 1)
+              message("    ", appendLF = FALSE)
             for (j in i1:i2)
-              cat(sprintf("%8i ( %5.1f )", x$ctable$n[[k]][i,j],
-                  x$ctable$p[[k]][i,j]))
+              message(gettextf("%8i ( %5.1f )", x$ctable$n[[k]][i,j],
+                  x$ctable$p[[k]][i,j]), domain = NA, appendLF = FALSE)
             ibct <- sum(x$ctable$n[[k]][i, i1:i2])
             pbct <- sum(x$ctable$p[[k]][i, i1:i2])
-            cat(sprintf("%8i ( %5.1f )\n", ibct, pbct))
+            message(gettextf("%8i ( %5.1f )", ibct, pbct), domain = NA)
           }  # end for (i in 1:np)
-          for (ii in i1:(i2+2))  cat("-----------------")
+          for (ii in i1:(i2+1))
+            message(dl18, appendLF = FALSE)
+          message(rep("----", max(2, lk4)))
+
         }   # if (lk4 > 0) end
 
-        cat("\n   Total")
+        message("   Total", appendLF = FALSE)
         if (idf == FALSE && lk4 > 2)
           for (j in 1:(lk4-2))
-            cat("    ")
+            message("    ", appendLF = FALSE)
         for (j in i1:i2 )
-          cat(sprintf("%8i ( %5.1f )", x$total[[res]][j], ptc[j]))
-        cat(sprintf("%8i ( %5.1f )\n", nsamp, ptt))
+          message(gettextf("%8i ( %5.1f )", x$total[[res]][j], ptc[j]), domain = NA, appendLF = FALSE)
+        message(gettextf("%8i ( %5.1f )", nsamp, ptt), domain = NA)
 
         nmiss <- x$missing[[res]]
         ntype <- length(nmiss)
@@ -1470,28 +1469,48 @@ print.catdap2 <- function(x, ...) {
           }   #  for (i in 1:lk4) end
         }   # if (lk4 > 0) end
 
-        cat(sprintf("\nAIC = %8.2f\n", x$caic[k]))
-        cat(sprintf("base AIC = %8.2f\n\n", x$base.aic))
+        message(gettextf("\nAIC = %8.2f", x$caic[k]), domain = NA)
+        message(gettextf("base AIC = %8.2f", x$base.aic), domain = NA)
 
       } # for (k in  1:ntbl) end
 
       nbest <- 1
       if (lk > 1) { 
-        aicm1 <- x$aaic[1]
+        aicm1 <- x$subset$aic[1]
         for (i in 2:lk) {
-          aicm2 <- x$aaic[i]
+          aicm2 <- x$subset$aic[i]
           daic <- abs(aicm2 - aicm1) / max(abs(aicm2), abs(aicm1))
           if (daic > eps)
             break
           nbest <- nbest + 1
         }
         if (nbest == 3)
-          cat("<NOTE> There is another subset with the minimum AIC.\n\n")
+          message("<NOTE> There is another subset with the minimum AIC.\n")
         if (nbest > 3)
-          cat(sprintf("<NOTE> There are another %3i subsets with the minimum AIC.\n\n", nbest-2))
+          message(gettextf("<NOTE> There are another %3i subsets with the minimum AIC.", nbest-2), domain = NA)
       }
     } else {
-        print.err2(x$ier)
+      ier <- x$ier[1]
+      eval <- x$ier[2]
+
+      if (ier == 2002) {
+        stop(" Working area for multi-dimensional table is not enough. Try larger pa2.")
+      } else if (ier == 2003) {
+        stop(" Working area for multi-dimensional table is not enough. Try larger pa3.")
+      } else if (ier == 2048) {
+        if (eval != -999)
+          stop(gettextf(" Working area for contingency table is too short, try pa1= %i.", eval), domain = NA)
+        if (eval == -999)
+          stop(" Working area for contingency table is too short. pa1 can no longer set a larger value.")
+      } else if (ier == 2037) {
+        stop(" the program catdap cannot deal with data sets where the number of non-zero frequency categories of the response variables is less than 2.")
+      } else if (ier == 2035) {
+        stop(" The value of variable is beyond the interval specified in 'min' and 'max'.")
+      } else if (ier == 2588) {
+        stop(" lk5 > n-1 ")
+      } else if (ier == 650) {
+        stop(" The value of 'nvar' is too small for the additional analysis.")
+      }
     }
 
 }
@@ -1583,34 +1602,34 @@ print.Note <- function(title, accuracy, interval, dname, i1, i2, ntype, nmiss) {
 
 #==============================================================================
 
-      cat("<Note>\n")
-      cat(sprintf(" %s\n", title))
+      message("\n<Note>")
+      message(gettextf(" %s", title), domain = NA)
       if (accuracy != 0.0) {
-        cat("\tcategory    \tvalue range\n")
+        message("\tcategory    \tvalue range")
         if (ntype == 0) {
           for (i in i1:i2)
-            cat(sprintf("\t%8i    \t%12.5e  -  %12.5e\n", i, interval[i],
-                interval[i+1]))
+            message(gettextf("\t%8i    \t%12.5e  -  %12.5e", i, interval[i],
+                interval[i+1]), domain = NA)
         } else if (ntype != 0) {
           for (i in i1:(i2-ntype))
-            cat(sprintf("\t%8i    \t%12.5e  -  %12.5e\n", i, interval[i],
-                interval[i+1]))
+            message(gettextf("\t%8i    \t%12.5e  -  %12.5e", i, interval[i],
+                interval[i+1]), domain = NA)
           for (i in 1:ntype)
-            cat(sprintf("\t%8i    \tmissing of type %i\n", i2-ntype+i, nmiss[i]))
+            message(gettextf("\t%8i    \tmissing of type %i", i2-ntype+i, nmiss[i]), domain = NA)
         }
     } else {
-        cat("\tcategory    \tvariable value\n")
+        message("\tcategory    \tvariable value")
         if (ntype == 0) {
           for (i in i1:i2)
-            cat(sprintf("\t%8i    \t%s\n", i, dname[i]))
+            message(gettextf("\t%8i    \t%s", i, dname[i]), domain = NA)
         } else if (ntype != 0) {
           for (i in i1:(i2-ntype))
-            cat(sprintf("\t%8i    \t%s\n", i, dname[i]))
+            message(gettextf("\t%8i    \t%s", i, dname[i]), domain = NA)
           for (i in 1:ntype)
-            cat(sprintf("\t%8i    \tmissing of type %i\n", i2-ntype+i, nmiss[i]))
+            message(gettextf("\t%8i    \tmissing of type %i", i2-ntype+i, nmiss[i]), domain = NA)
       }
     }
-    cat("\n\n")
+    message("")
 }
 
 #=================================================================
@@ -1621,63 +1640,33 @@ print.CtableNote <- function(ix, title, accuracy, interval, dname, i1, i2,
 #=================================================================
 
     if (ix == 1 )
-      cat("\n<Note>\n")
-    cat(sprintf("X(%i) : %s\n", ix, title))
+      message("\n<Note>")
+    message(gettextf("X(%i) : %s", ix, title), domain = NA)
 
     if (accuracy != 0.0) {
-      cat("\tcategory    \tvalue range\n")
+      message("\tcategory    \tvalue range")
       if (ntype == 0) {
         for (i in i1:i2) 
-          cat(sprintf("\t%8i    \t%12.5e   -   %12.5e\n", i, interval[i],
-              interval[i+1]))
+          message(gettextf("\t%8i    \t%12.5e   -   %12.5e", i, interval[i],
+              interval[i+1]), domain = NA)
       } else if (ntype != 0) {
         for (i in i1:(i2-ntype))
-          cat(sprintf("\t%8i    \t%12.5e   -   %12.5e\n", i, interval[i],
-              interval[i+1]))
+          message(gettextf("\t%8i    \t%12.5e   -   %12.5e", i, interval[i],
+              interval[i+1]), domain = NA)
         for (i in 1:ntype)
-          cat(sprintf("\t%8i    \tmissing of type %i\n", i2-ntype+i, nmiss[i]))
+          message(gettextf("\t%8i    \tmissing of type %i", i2-ntype+i, nmiss[i]), domain = NA)
       }
     } else {
-      cat("\tcategory    \tvariable value\n")
+      message("\tcategory    \tvariable value")
       if (ntype == 0) {
         for (i in i1:i2)
-          cat(sprintf("\t%8i    \t%s\n", i, dname[i]))
+          message(gettextf("\t%8i    \t%s", i, dname[i]), domain = NA)
       } else if (ntype != 0) {
         for (i in i1:(i2-ntype))
-          cat(sprintf("\t%8i    \t%s\n", i, dname[i]))
+          message(gettextf("\t%8i    \t%s", i, dname[i]), domain = NA)
         for (i in 1:ntype)
-          cat(sprintf("\t%8i    \tmissing of type %i\n", i2-ntype+i, nmiss[i]))
+          message(gettextf("\t%8i    \tmissing of type %i", i2-ntype+i, nmiss[i]), domain = NA)
       }
-    }
-}
-
-
-#============================
-
-print.err2 <- function(err) {
-
-#============================
-
-    ier <- err[1]
-    eval <- err[2]
-
-    if (ier == 2002) {
-      cat(" Error : Working area for multi-dimensional table is not enough. Try larger pa2.\n")
-    } else if (ier == 2003) {
-      cat(" Error : Working area for multi-dimensional table is not enough. Try larger pa3.\n")
-    } else if (ier == 2048) {
-      if (eval != -999)
-        cat(sprintf(" Error : Working area for contingency table is too short, try pa1= %i.\n", eval))
-      if (eval == -999)
-        cat("Error : Working area for contingency table is too short. pa1 can no longer set a larger value.\n")
-    } else if (ier == 2037) {
-      cat(" caution : the program catdap cannot deal with data sets where the number of non-zero frequency categories of the response variables is less than 2.\n")
-    } else if (ier == 2035) {
-      cat(" Error : the value of variable is beyond the interval specified in 'min' and 'max'.\n")
-    } else if (ier == 2588) {
-      cat(" Error :  lk5 > n-1 \n")
-    } else if (ier == 650) {
-      cat(" Error : the value of 'nvar' is too small for the additional analysis.\n")
     }
 }
 
@@ -2003,7 +1992,7 @@ plot.grshade <- function(title, aic, ires, nsamp, old.par, ask) {
 #=====================================================================
 
 Barplot2WayTable <- function (vname, resvar, exvar=NULL, tway.table,
-                              interval=NULL) {
+                              interval = NULL) {
 
 #=====================================================================
 
@@ -2021,7 +2010,7 @@ Barplot2WayTable <- function (vname, resvar, exvar=NULL, tway.table,
   } else {  # catdap2
     ic <- 2
     if (is.null(interval) == TRUE)
-      stop(" Error : Class interval is not specified.")
+      stop(" Class interval is not specified.")
   }
 
   if (ic == 1) {  # catdap1() or catdap1c()
@@ -2034,7 +2023,7 @@ Barplot2WayTable <- function (vname, resvar, exvar=NULL, tway.table,
           break
         }
       if (res == 0)
-        stop(" Error : response variable name is wrong.")
+        stop(" Response variable name is wrong.")
 
       nbar <- 0
       if (nexv > 1)
@@ -2047,7 +2036,7 @@ Barplot2WayTable <- function (vname, resvar, exvar=NULL, tway.table,
             break
           }
         if (ex == 0)
-          stop(" Error : explanatory variable name is wrong.")
+          stop(" Explanatory variable name is wrong.")
 
         if (res != ex) {
           if (nbar == 0 && nw > 0) {
@@ -2073,7 +2062,7 @@ Barplot2WayTable <- function (vname, resvar, exvar=NULL, tway.table,
         break
       }
     if (res == 0)
-      stop(" Error : response variable name is wrong.")
+      stop(" Response variable name is wrong.")
 
     if (nexv > 1)
       par(mfcol = c(nc, 1))
@@ -2085,7 +2074,7 @@ Barplot2WayTable <- function (vname, resvar, exvar=NULL, tway.table,
           break
         }
       if (ex == 0)
-        stop(" Error : explanatory variable name is wrong.")
+        stop(" Explanatory variable name is wrong.")
 
       if (res != ex) {
         h <- tway.table[[ex]]$n
@@ -2113,12 +2102,12 @@ Barplot2WayTable <- function (vname, resvar, exvar=NULL, tway.table,
 
     nint <- length(interval[[res]])
     if (nint > nrres) {
-      cat("\n<Note>\n")
-      cat(sprintf(" %s\n", resname))
-      cat("\tcategory    \tvalue range\n")
+      message("\n<Note>")
+      message(gettextf(" %s", resname), domain = NA)
+      message("\tcategory    \tvalue range")
       for (k in 1:nrres)
-        cat(sprintf("\t%8i    \t%12.5e  -  %12.5e\n", k, interval[[res]][k],
-            interval[[res]][k+1]))
+        message(gettextf("\t%8i    \t%12.5e  -  %12.5e", k,
+                interval[[res]][k], interval[[res]][k+1]), domain = NA)
     }
   }
   par(mfcol = c(1,1))
@@ -2223,7 +2212,7 @@ MissingCount1 <- function (data, pool, xx, typeu, n1) {
 #     categorical letters
 #
   } else {
-    tmp <- data
+    tmp <- as.factor(data)
     cdata <- as.numeric(tmp)
     pool <- 2
     xx <- 0.0

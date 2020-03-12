@@ -13,9 +13,9 @@ data(MissingHealthData)
   A data frame with 52 observations on the following 8 variables.
 
   A part of the source data was recoded according to an input example of
-  original program CATDAP-02. In addition we converted 1 into 'A' and 2 into 'B'
-  of symptoms data, and converted cholesterol data less than 198 into 'low' and
-  the others into 'high'.
+  original program CATDAP-02. In addition, we converted 1 into 'A' and 2 into
+  'B' of symptoms data, and converted cholesterol data less than 198 into 'low'
+  and the others into 'high'.
 
   \tabular{rlll}{
   [, 1] \tab opthalmo. \tab 1, 2\cr
@@ -29,7 +29,7 @@ data(MissingHealthData)
   }
 }
 \source{
-  Y.Sakamoto, M.Ishiguro and G.Kitagawa (1982)
+  Y.Sakamoto, M.Ishiguro and G.Kitagawa (1980)
   \emph{Computer Science Monograph, No.14, CATDAP, A CATEGORICAL DATA ANALYSIS
   PROGRAM PACKAGE, DATA No.2.} The Institute of Statistical Mathematics.
 

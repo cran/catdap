@@ -89,7 +89,8 @@ for (i in 1:n)
       z[j, k:(k+np-1)] <- dimnames(Titanic)[[j]][[y[i, j]]]
     k <- k + np
   }
-data <- data.frame(aperm(array(z, dim = c(4,2201)), c(2,1)))
+data <- data.frame(aperm(array(z, dim = c(4,2201)), c(2,1)),
+                   stringsAsFactors = TRUE)
 names(data) <- names(dimnames(Titanic))
 catdap1(data, "Survived")
 }

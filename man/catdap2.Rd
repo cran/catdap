@@ -62,8 +62,8 @@ catdap2(data, pool = NULL, response.name, accuracy = NULL, nvar = NULL,
   \eqn{n_E(i) (i\in(E))}{n_E(i) (i in (E))} and
   \eqn{n_F(j) (j\in(F))}{n_F(j) (j in (F))}. The cross frequency is denoted by
   \eqn{n_F,F(i,j)}{n_F,F(i,j)} \eqn{(i,j\in(E,F))}{(i,j in (E,F))}. To measure
-  the strength of dependence of a specific set of response variables E on the
-  explanatory variable F, we use the following statistic:
+  the strength of dependence of a specific set of response variables \eqn{E} on
+  the explanatory variable \eqn{F}, we use the following statistic:
 
   \deqn{AIC(E;F) = -2\sum_{i,j\in(E,F)} n_E,F(i,j)\ ln\{n_E,F(i,j)/(n_F(j)\} + 2(C_E-1)C_F,\ \ (1)}{%
         AIC(E;F) = -2 \sum _{i,j in (E,F)} n_E,F(i,j) ln{n_E,F(i,j)/(n_F(j)} + 2(C_E-1)C_F,  (1)}
@@ -115,7 +115,7 @@ catdap2(data, pool = NULL, response.name, accuracy = NULL, nvar = NULL,
   \deqn{r_m = \left[ \; b_m,\; b_{m+1}\; \right] .}{%
         r(m) = [ b(m), b(m+1) ] .}
 
-  Specifically for continuous response variable \eqn{V},
+  Specifically, for continuous response variable \eqn{V},
 
   \deqn{r_i = \left[ \; x_{min} + (i-1)*s,\; x_{min} + i*s \; \right. ) \;\; \mathrm{for} \;1 \le i < m,}{%
         r(i) = [ x_min + (i-1)*s,  x_min + i*s )   for 1<= i < m,}
@@ -133,14 +133,21 @@ catdap2(data, pool = NULL, response.name, accuracy = NULL, nvar = NULL,
   \item{interval}{class interval for continuous and discrete explanatory
     variables.}
   \item{base.aic}{base_AIC.}
-  \item{aic}{AIC's of explanatory variables.}
+  \item{aic}{AIC's of single explanatory variables.}
   \item{aic.order}{list of explanatory variable numbers arranged in ascending
     order of AIC.}
   \item{nsub}{number of subsets of explanatory variables.}
-  \item{nv}{number of explanatory variables in a subset.}
-  \item{ncc}{number of categories in a subset of explanatory variables.}
-  \item{aaic}{AIC's of subsets of explanatory variables.}
-  \item{cexp}{list of subsets of explanatory variables.} 
+  \item{subset}{list of subsets of explanatory variables in ascending order of
+    AIC with the following components:
+
+    \describe{
+      \item{nv:}{number of explanatory variables,}
+      \item{ncc:}{number of categories,}
+      \item{aic:}{AIC's,}
+      \item{exv:}{explanatory variables,}
+      \item{vname:}{explanatory variable names.}
+    }
+  }
   \item{ctable}{contingency table constructed by the best subset and additional
     subsets if any variables is specified by \code{additional.output}.}
   \item{ctable.interval}{class interval for continuous and discrete explanatory
@@ -176,7 +183,7 @@ catdap2(HealthData, c(2, 2, 2, 0, 0, 0, 0, 2), "symptoms",
 
 # Example 2 (Edgar Anderson's Iris Data)
 # continuous response variable handling and the usage of Barplot2WayTable
-# function to visualize the the result in shape of stacked histogram.
+# function to visualize the result in shape of stacked histogram.
 
 data(iris)  
 resvar <- "Petal.Width"
@@ -193,7 +200,7 @@ pool <- rep(2, 56)
 
 ## using the default values of parameters pa1, pa2, pa3
 ## catdap2(HelloGoodbye, pool, "Isay", nvar = 10, print.level = 1, plot = 0) 
-## error : Working area for contingency table is too short, try pa1 = 12.
+## Error : Working area for contingency table is too short, try pa1 = 12.
 
 ### According to the error message, set the parameter p1 at 12, then ..
 catdap2(HelloGoodbye, pool, "Isay", nvar = 10, pa1 = 12, print.level = 1,
