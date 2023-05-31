@@ -605,18 +605,18 @@ cc     3                totalr,ia,iab,lcy,totalc,ttrr,kp,nc,ncc,knn,lj,lt,
 cc     4                idat,noo,xx,sk,dx,ab,tttr,a1,a,pa,ptr,ptc,
 cc     5                da,bmin,bmax,am1,ai,aa,ax,totr,samp,n11,n22,
 cc     6                n33,iw,w,nw,jnn,inn,jjn)
-       subroutine catdap2mf(nsamp,n,l,recode,iskip1,it,nov,icl,
-     1              item1,item2,ity,iconv,face,iskip,isk,sk,icls,xx,
-     2              ida,da0,typeu,mix,iab,totalc,ttrr,ab,iaa,pa,
-     3              idata,ite,dx,aaam,caa,icaa,nnia,lk77,morder,iby,ibc,
-     4              pbc,aic1,iabse,baseaic,n11,n33,ikr,jkr,ikkk,eps01,
-     5              ier)
+       subroutine catdap2m(nsamp,n,l,recode,iskip1,it,nov,icl,item1,
+     1                     item2,ity,iconv,face,iskip,isk,sk,icls,xx,
+     2                     ida,da0,typeu,mix,iab,totalc,ttrr,ab,iaa,pa,
+     3                     idata,ite,dx,aaam,caa,icaa,nnia,lk77,morder,
+     4                     ibc,pbc,aic1,iabse,baseaic,n11,n33,ikr,jkr,
+     5                     ikkk,eps01,nrange,ier)
 c
 c     this subroutine is substantially the main program of catdap-02.
 c     this searches for maice within the possible ways of categorization
 c     of a single explanatory variable in case 'ity(k)=0'.
 c
-      INCLUDE 'catdap_f.h'
+      INCLUDE 'catdap.h'
 c
 cxx      implicit real*8(a-h,o-z)
 cc      integer*2 item,ia,idata,totalr,face,ite,title,iab,iaa,lcy,iw,isk,
@@ -645,33 +645,35 @@ cxx     6           icaa(ikr),nnia(ikr),morder(ikr),ier(3),
 cxx     7           iby(nov,ikkk,icl+1),ibc(n11,ikkk,icl+1),
 cxx     8           pbc(n11,ikkk,icl+1),aic1(icl+1),
 cxx     9           iabse(nov,n33,icl+1)
-      integer :: nsamp, n, l, recode, iskip1, it, nov, icl,
-     1           item1(n), item2(n), ity(n), iconv(20,recode),
-     2           face(l), iskip(20,iskip1), isk(2,iskip1),
-     3           icls(max(10,nov+1),icl), ida(n,nsamp), mix(n),
-     4           iab(n,n11,n33), totalc(n11), ttrr(n,n33), iaa(n,n33),
-     5           idata(n), ite(n), caa(ikr,jkr), icaa(ikr), nnia(ikr), 
-     6           lk77, morder(ikr), iby(nov,ikkk,icl+1),
-     7           ibc(n11,ikkk,icl+1), iabse(nov,n33,icl+1),
-     8           n11, n33, ikr, jkr, ikkk, ier(3)
-      real(8) :: sk(20,iskip1), xx(n), da0(n,nsamp), ab(n,n33),
-     1           pa(n,n11,n33), dx(n), typeu, aaam(ikr),
-     2           pbc(n11,ikkk,icl+1), aic1(icl+1), baseaic, eps01
+      integer nsamp, n, l, recode, iskip1, it, nov, icl, item1(n),
+     1        item2(n), ity(n), iconv(20,recode), face(l),
+     2        iskip(20,iskip1), isk(2,iskip1), icls(max(10,nov+1),icl),
+     3        ida(n,nsamp), mix(n), iab(n,n11,n33), totalc(n11),
+     4        ttrr(n,n33), iaa(n,n33), idata(n), ite(n), caa(ikr,jkr), 
+     5        icaa(ikr), nnia(ikr), lk77, morder(ikr),
+     6        ibc(n11,ikkk,icl+1), iabse(nov,n33,icl+1), n11, n33,
+     7        ikr, jkr, ikkk, ier(3)
+      double precision sk(20,iskip1), xx(n), da0(n,nsamp), ab(n,n33),
+     1                 pa(n,n11,n33), dx(n), typeu, aaam(ikr),
+     2                 pbc(n11,ikkk,icl+1), aic1(icl+1), baseaic, eps01
 cxx      dimension item(n),totalr(n33),ia(n,n11,n33),tttr(n33),a1(n11,n33),
 cxx     1           lcy(10,n33),kp(n),nc(n33),ncc(n33),knn(n33),lj(10),
 cxx     2           lt(10),idat(n),a(n11,n33),bmin(n),bmax(n),am1(n),ai(n),
 cxx     3           aa(n33),ax(n33),totr(n33)
-      integer :: item(n), totalr(n33), ia(n,n11,n33), lcy(10,n33),
-     1           kp(n), nc(n33), ncc(n33), knn(n33), lj(10), lt(10),
-     2           idat(n)
-      real(8) :: ptr(n,n33), ptc(n11), tttr(n33), a1(n11,n33),
-     1           a(n11,n33), bmin(n), bmax(n), am1(n), ai(n), aa(n33),
-     2           ax(n33), totr(n33), bmagic, xmagic, am, am2, am11, aii,
-     3           sum, shift, expo, tsmp, aaa, al, aic, aicmm, daic,
-     4           ddd, as, as1, tt, damx
+c local
+      integer item(n), totalr(n33), ia(n,n11,n33), lcy(10,n33), kp(n),
+     1        nc(n33), ncc(n33), knn(n33), lj(10), lt(10), idat(n)
+      double precision ptr(n,n33), ptc(n11), tttr(n33), a1(n11,n33),
+     1                 a(n11,n33), bmin(n), bmax(n), am1(n), ai(n),
+     2                 aa(n33),ax(n33), totr(n33), bmagic, xmagic, am,
+     3                 am2, am11, aii, sum, shift, expo, tsmp, aaa, al,
+     4                 aic, aicmm, daic, ddd, as, as1, tt, damx
 c-----    modified for missing value handling by M.I.
-      integer :: Mtype(n), mmi(n), magic, imagic, mixtype, igd(n)
-      real(8) :: postsamp, da(n,nsamp), dai, daj, tem, dam2
+      integer Mtype(n), mmi(n), magic, imagic, mixtype, igd(n)
+      double precision postsamp, da(n,nsamp), dai, daj, tem, dam2
+c-----
+cxxxx      integer nrange(n, icl+1)
+      integer nrange(nov, icl+1)
 c-----
 c
 cc      character*4    fm1(20),fm2(20),fm3(20)
@@ -731,11 +733,13 @@ c <<<
       nnia(1:ikr) = 0
       morder(1:ikr) = 0
       icl1 = icl+1
-      iby(1:nov,1:ikkk,1:icl1) = 0
+cxxx      iby(1:nov,1:ikkk,1:icl1) = 0
       ibc(1:n11,1:ikkk,1:icl1) = 0
       pbc(1:n11,1:ikkk,1:icl1) = 0.0d0
       aic1(1:icl1) = 0.0d0
       iabse(1:nov,1:n33,1:icl1) = 0
+cxxxx      nrange(1:n,1:icl1) = 0
+      nrange(1:nov,1:icl1) = 0
       ier(1:3) = 0
 c
       bmin(1:n)=1.d50
@@ -884,7 +888,8 @@ c-----    modified for missing value handling by M.I.
 cm      if(xx(i).eq.0) go to 120
 c-----
 cxx      mm=(bmax(i)-bmin(i))/xx(i)+1
-      mm=int((bmax(i)-bmin(i))/xx(i))+1
+cxxx      mm=int((bmax(i)-bmin(i))/xx(i))+1
+      mm=int((bmax(i)-bmin(i))/xx(i)+eps01)+1
       if(igd(i) .eq.1) then
          am1(i) = bmin(i) - 0.5d0
          ai(i) = 1.d0
@@ -893,7 +898,8 @@ cxx      mm=(bmax(i)-bmin(i))/xx(i)+1
 c-----
       mm=min(mm,50,nj)
 cxx      m=((bmax(i)-bmin(i))/xx(i)  )/mm+1
-      m=int(((bmax(i)-bmin(i))/xx(i))/mm)+1
+cxxx      m=int(((bmax(i)-bmin(i))/xx(i)  )/mm)+1
+      m=int(((bmax(i)-bmin(i))/xx(i))/mm+eps01)+1
       ai(i)=xx(i)*m
 cxx      i1=bmin(i)/ai(i)
       i1=int(bmin(i)/ai(i))
@@ -1720,7 +1726,7 @@ cc      imax=imax1
 cc      if(imax1.gt.imaxx) imaxx=imax1
 cc      call ac1p(a,ii,totalr,jj,iw(1),nc,ncc,lcy,lj,knn,iw(i11),a1,
 cc     1          totr,tttr,aa,am,kk5,kk2,iw(i12),w(1),n11,n33,totalc)
-      call ac1p(a,i2,totalr,j2,nc,ncc,lcy,lj,knn,a1,
+        call ac1p(a,i2,totalr,j2,nc,ncc,lcy,lj,knn,a1,
 cm     1          totr,tttr,aa,am,kk5,kk2,n11,n33,totalc,eps01)
      1 totr,tttr,aa,am,kk5,kk2,n11,n33,totalc,postsamp,mixk,igd,k,eps01)
 cc      imaxx=imax0
@@ -1781,7 +1787,8 @@ c-----    modified for missing value handling by M.I.
       ab(k,mi2)=bmax(k)
       if (mix(k).ne.0) then
       do mi1=1,mix(k)
-        ab(k,mi2+mi1) = typeU*(mi1+1)
+c 2020/08/16        ab(k,mi2+mi1) = typeU*(mi1+1)
+        ab(k,mi2+mi1) = typeU*mi1
       enddo
       end if
 c-----
@@ -2086,11 +2093,13 @@ cc     7          tttr(j13),tttr(j14),ab,xx,iconv,title,item1,idata(i40),
 cc     8          tttr(j15),it,ikkk,ikr,ikh,ikn,ikf,n,n33,recode,nx,nnn,
 cc     9          jn,izu,icl,icls)
       novnew = min(nov, novnew)
-      call mdap0(ite,nsamp,iaa,idata,ida,iby,ibc,aic1,caa,icaa,nnia,pbc,
+cxxx      call mdap0(ite,nsamp,iaa,idata,ida,iby,ibc,aic1,caa,icaa,nnia,pbc,
+      call mdap0(ite,nsamp,iaa,idata,ida,ibc,aic1,caa,icaa,nnia,pbc,
      1           aaam,da0,ab,iabse,xx,iconv,item1,ity,it,ikkk,ikr,jkr,
      2           ikh,ikn,lk77,morder,novnew,n11,n33,recode,nx,icl,icls,
      3           typeu,magic,imagic,bmagic,xmagic,mmi,mix,postsamp,
-     4           igd,eps01,ier)
+cxxx     4           igd,eps01,ier)
+     4           igd,nrange,eps01,ier)
 c
       n = nx
 cc  315 continue
@@ -2183,12 +2192,13 @@ cc     2                nni,itype,ias2,icon,icon1,icon2,caa,icaa,nnia,c,
 cc     3                data,idata,pbc,aicmm,aa,aaa,da,ab,xx,iconv,title,
 cc     4                item1,iw,w,itx,ikkk,ikr,ikh,ikn,ikf,n,n33,recode,
 cc     5                nx,nnn,jnn,izu,icl,icls,in)
-      subroutine mdap0(item,nsamp,iaa,imm,idata,iby,ibc,aic1,caa,icaa,
+cxxx      subroutine mdap0(item,nsamp,iaa,imm,idata,iby,ibc,aic1,caa,icaa,
+      subroutine mdap0(item,nsamp,iaa,imm,idata,ibc,aic1,caa,icaa,
      1              nnia,pbc,aaa,da,ab,iabse,xx,iconv,item1,ity,itx,
      2              ikkk,ikr,jkr,ikh,ikn,lk77,morder,n,n11,n33,recode,
      3              nx,icl,icls, typeu,magic,imagic,bmagic,xmagic,
-     4              mmi,mix,postsamp,igd,eps01,ier)
-
+cxx     4              mmi,mix,postsamp,igd,eps01,ier)
+     4              mmi,mix,postsamp,igd,nrange,eps01,ier)
 c
 c     this subroutine searches for the optimal multidimensional
 c     contingency table with respect to the combination of explanatory
@@ -2212,26 +2222,26 @@ cc     6          w(jnn),data(nsamp,n),imm(n),icon(n,ikn),icon1(n,ikn),
 cc     7            ica(ikr),lg(ikr),nni(ikr),itype(n),ias2(n,ikn),
 cc     8            data(nsamp,n),icon(n,ikn),icon1(n,ikn),
 cc     9            icaa(ikr),nnia(ikr),pbcc(n11),morder(ikr)
-      integer :: item(nx), nsamp, iaa(nx,n33), imm(nx), idata(nx,nsamp),
-     1           iby(n,ikkk,icl+1), ibc(n11,ikkk,icl+1), caa(ikr,jkr),
-     2           icaa(ikr), nnia(ikr), iabse(n,n33,icl+1), 
-     3           iconv(20,recode), item1(nx), ity(nx), itx, ikkk, ikr,
-     4           jkr, ikh, ikn, lk77, morder(ikr),n, n11, n33,
-     5           nx, icl, icls(max(10,n+1),icl), ier(2)
-      real(8) :: aic1(icl+1), pbc(n11,ikkk,icl+1), aaa(ikr),
-     1           da(nx,nsamp), ab(nx,n33), xx(nx), eps01
+      integer item(nx), nsamp, iaa(nx,n33), imm(nx), idata(nx,nsamp),
+     1        ibc(n11,ikkk,icl+1), caa(ikr,jkr), icaa(ikr), nnia(ikr),
+     2        iabse(n,n33,icl+1),  iconv(20,recode), item1(nx), ity(nx),
+     3        itx, ikkk, ikr,jkr, ikh, ikn, lk77, morder(ikr), n, n11,
+     4        n33, nx, icl, icls(max(10,n+1),icl), ier(2)
+      double precision aic1(icl+1), pbc(n11,ikkk,icl+1), aaa(ikr),
+     1                 da(nx,nsamp), ab(nx,n33), xx(nx), eps01
 c-----    modified for missing value handling by M.I.
-      integer :: mmi(n), mix(nx), magic, imagic, igd(nx)
-      real(8) :: typeu, postsamp, bmagic, xmagic, damagic, daiy3
+      integer mmi(n), mix(nx), magic, imagic, igd(nx)
+      double precision typeu, postsamp, bmagic, xmagic, damagic, daiy3
 c-----
-      integer :: ibd(n11), ib(ikkk), itemx(n), items(2,n),
-     1           itemt(n,2), itemy(n), itemz(ikh,n), ias1(2,n,ikn),
-     2           ias2(n,ikn), lca(n), lc(n), ca(ikr,jkr), ica(ikr),
-     3           lg(ikr), nni(ikr), itype(n), idt(n), data(nsamp,n),
-ccd     4           icon(n,ikn), icon1(n,ikn), icon2(n,ikn)
-     4           icon(n,2*ikn), icon1(n,ikn), icon2(n,ikn)
-      real(8) :: aa(ikr), aicmm(ikh), pbcc(n11), aic, aicm, acmmm,
-     1           aminx, aaaa, daic, epsxx
+      integer nrange(n, icl+1)
+c-----
+      integer ibd(n11), ib(ikkk), itemx(n), items(2,n), itemt(n,2),
+     1        itemy(n), itemz(ikh,n), ias1(2,n,ikn), ias2(n,ikn),
+     2        lca(n), lc(n), ca(ikr,jkr), ica(ikr), lg(ikr), nni(ikr),
+     3        itype(n), idt(n), data(nsamp,n), icon(n,2*ikn),
+     4        icon1(n,2*ikn), icon2(n,2*ikn)
+      double precision aa(ikr), aicmm(ikh), pbcc(n11), aic, aicm, acmmm,
+     1                 aminx, aaaa, daic, epsxx
 cc      character*4 fmt(20),fm1(5),fm2(5),fm3(4),fm4(10),fm11(10)
 cc      character*4 fm12(10),fm13(10),fm21(10),fm22(10),fm23(10)
 cc      character*1 mxx(6)
@@ -2340,7 +2350,7 @@ cc      daiy3 = da(iy3,jl)
 c-----
       kk5=item(iy3)
 c <<<
-          kk6 = kk5-mix(iy3)
+         kk6 = kk5-mix(iy3)
 c >>>
       do 1120 j=1,kk5
       if(itx.ne.0.and.xx(iy3).ne.0.) go to 1130
@@ -2353,7 +2363,15 @@ cc      if(ab(iy3,j+1).gt.da(iy3)) go to 1110
 c-----    modified by M.I.
 ccc      if(abs(da(iy3,i)-ab(iy3,j+1)).lt.xx(iy3)/1.d5) go to 1120
 ccc      if(ab(iy3,j+1).gt.da(iy3,i)) go to 1110
-      if(daiy3.gt.ab(iy3,j+1)) go to 1120
+c 2022/02/19      if(daiy3.gt.ab(iy3,j+1)) go to 1120
+      if(daiy3.gt.ab(iy3,j+1)) then
+         if (j.gt.kk6 .and. j.lt.kk5) then
+            if (daiy3.lt.ab(iy3,j+2)) go to 1110
+            go to 1120
+         else
+            go to 1120
+         endif
+      end if
       if(j.lt.kk6 .and. abs(daiy3-ab(iy3,j+1)).lt.epsxx) go to 1120
       go to 1110
 c-----
@@ -2470,7 +2488,7 @@ cxx      do 35 i=1,lk77
       aaa(i)=aa(i)
       icaa(i)=ica(i)
       nnia(i)=nni(i)
-         if(icaa(i).gt.jkr) go to 573
+      if(icaa(i).gt.jkr) go to 573
 cc      do 35 ii=1,10
       do 35 ii=1,icaa(i)
       caa(i,ii)=ca(i,ii)
@@ -2596,7 +2614,7 @@ cxx      do 155 i=1,lk77
       aaa(i)=aa(i)
       icaa(i)=ica(i)
       nnia(i)=nni(i)
-         if(icaa(i).gt.jkr) go to 573
+      if(icaa(i).gt.jkr) go to 573
 cc      do 155 ii=1,10
       do 155 ii=1,icaa(i)
       caa(i,ii)=ca(i,ii)
@@ -2677,7 +2695,7 @@ cxx      do 185 i=1,lk77
       aaa(i)=aa(i)
       icaa(i)=ica(i)
       nnia(i)=nni(i)
-         if(icaa(i).gt.jkr) go to 573
+      if(icaa(i).gt.jkr) go to 573
 cc      do 185 iii=1,10
       do 185 iii=1,icaa(i)
       caa(i,iii)=ca(i,iii)
@@ -2810,7 +2828,7 @@ ccc     1 go to 270
 ccxx      if(acmmm.lt.aic) go to 290
          daic=dabs(acmmm-aic)
          if(daic.ne.0) daic=daic/max(dabs(acmmm), dabs(aic))
-      if(acmmm.lt.aic .and. daic.gt.eps01) go to 290
+         if(acmmm.lt.aic .and. daic.gt.eps01) go to 290
 
       acmmm=aic
       lk5=lk2
@@ -3020,8 +3038,11 @@ cc      if(lk5.ne.0) write(4,2008) (mxx(1),j=2,lk6),(mxx(6),j=1,11-lk6)
   425 continue
       ib(iax)=ib(iax)+1
   400 continue
-      kk=1
-      do 430 i=1,lk6
+cxxx      kk=1
+cxxx      do 430 i=1,lk6
+      kk=idt(1)
+      do 430 i=2,lk6
+         nrange(i-1,ncount) = idt(i)
       kk=kk*idt(i)
   430 continue
       do 440 ill=1,2
@@ -3052,21 +3073,21 @@ cxx  455 continue
 cxx        if(kkj. gt. n33*n33*n33) go to 585
          if(kkj. gt. ikkk) go to 585
       do 460 i=1,kkj
-      i01=i-1
-      kx=idt(lk6)
-cc      iby(lk6)=mod(i01,kx)+1
-      iby(lk6,i,ncount)=mod(i01,kx)+1
-      ky=kx
-      if(lk5.eq.0) go to 475
-      do 470 j=2,lk6
-      i02=i01/ky
-      lk6j=lk6+1-j
-      kx=idt(lk6j)
-cc      iby(lk6j)=mod(i02,kx)+1
-      iby(lk6j,i,ncount)=mod(i02,kx)+1
-      ky=ky*kx
-  470 continue
-  475 continue
+cxxx      i01=i-1
+cxxx      kx=idt(lk6)
+cxxxcc      iby(lk6)=mod(i01,kx)+1
+cxxx      iby(lk6,i,ncount)=mod(i01,kx)+1
+cxxx      ky=kx
+cxxx      if(lk5.eq.0) go to 475
+cxxx      do 470 j=2,lk6
+cxxx      i02=i01/ky
+cxxx      lk6j=lk6+1-j
+cxxx      kx=idt(lk6j)
+cxxxcc      iby(lk6j)=mod(i02,kx)+1
+cxxx      iby(lk6j,i,ncount)=mod(i02,kx)+1
+cxxx      ky=ky*kx
+cxxx  470 continue
+cxxx  475 continue
       ibct=0
       iq=(i-1)*kx1
       do 480 it=1,kx1
@@ -3133,14 +3154,21 @@ cc      write(4,2034)
       if(i.eq.1) ij=1
       ijj=imm(ij)
       iii=idt(i)
+cadded 2022/01/30 (avoid a warning message)
+         nn1=1
+c -----------------------------------------
 cc      if(itype(ij).ne.1) go to 555  BUGFIX2 by M.I.
       if(itype(ij).eq.2) go to 555
       itm=item(ijj)
       nn2=1
       nn1=0
+
       do 556 ii=2,itm
-      if(icon(ij,ii-1).eq.icon2(ij,ii)) nn2=nn2+1
-      if(icon(ij,ii-1).eq.icon2(ij,ii)) go to 556
+c 2020/09/26      if(icon(ij,ii-1).eq.icon2(ij,ii)) nn2=nn2+1
+c 2020/09/26      if(icon(ij,ii-1).eq.icon2(ij,ii)) go to 556
+      if(icon2(ij,ii-1).eq.icon2(ij,ii)) nn2=nn2+1
+      if(icon2(ij,ii-1).eq.icon2(ij,ii)) go to 556
+
       nn1=nn1+1
       ias2(ij,nn1)=nn2
       nn2=1
@@ -3380,16 +3408,16 @@ cxx      dimension lc(n),ld(n,n),am(n),acmm(n),le(n,n),bic(n),
 cxx     1          lb(n),ni(n),idf(n),l1(n),l2(n),ly(2,n),lp(2),ac(n),
 cxx     2          lz(n),aa(ikr),icon(n,ikn),
 cxx     3          ca(ikr,jkr),ica(ikr),nni(ikr),data(nsamp,n),ier(2)
-      integer :: k, idf(n), lc(n), lk2, ca(ikr,jkr), ica(ikr), nni(ikr),
+      integer k, idf(n), lc(n), lk2, ca(ikr,jkr), ica(ikr), nni(ikr),
 ccd     1           data(nsamp,n), icon(n,ikn), lk7, ikr, jkr, ikn, n,
-     1           data(nsamp,n), icon(n,2*ikn), lk7, ikr, jkr, ikn, n,
-     2           nsamp, ier(2)
-      real(8) :: aicc, aa(ikr), postsamp,eps01
-c
-      integer :: ld(n,n), le(n,n), lb(n), ni(n),l 1(n), l2(n), ly(2,n),
-     1           lp(2), lz(n)
-      real(8) :: am(n), acmm(n), bic(n), ac(n), ax, amin, aminx,
-     1          amin2, ddd, daic
+     1        data(nsamp,n), icon(n,2*ikn), lk7, ikr, jkr, ikn, n,
+     2        nsamp, ier(2)
+      double precision aicc, aa(ikr), postsamp,eps01
+c local
+      integer ld(n,n), le(n,n), lb(n), ni(n),l 1(n), l2(n), ly(2,n),
+     1        lp(2), lz(n)
+      double precision am(n), acmm(n), bic(n), ac(n), ax, amin, aminx,
+     1                 amin2, ddd, daic
 cc      common ialim,imax,jalim,jmax,imaxx,jmaxx
 c
       lk7=0
@@ -3465,7 +3493,6 @@ c >>>
 cc      call aicsub (idf,lk3,ac(i),ni(i),bic(i),iw(1),iw(i11),iw(i12),
 cc     1             iw(i13),ly,lp,data,icon,nsamp,n,ikf,ikn,
 cc     2             iw(i14),iw(i15),in)
-
       call aicsub0 (idf,lk3,ac(i),ni(i),bic(i),ly,lp,data,icon,nsamp,n,
 cm     1             ikf,ikn,ier)
      1             ikf,ikn,ipmin,postsamp,ier)
@@ -3556,7 +3583,6 @@ c >>>
 cc      call aicsub (idf,lk3,am(i),nnmm,ax,iw(1),iw(i11),iw(i12),
 cc     1             iw(i13),ly,lp,data,icon,nsamp,n,ikf,ikn,
 cc     2             iw(i14),iw(i15),in)
-
       call aicsub0 (idf,lk3,am(i),nnmm,ax,ly,lp,data,icon,nsamp,n,ikf,
 ccm     1             ikn,ier)
      1             ikn,ipmin,postsamp,ier)
@@ -3684,14 +3710,14 @@ cxx      dimension icon(n,20),ias1(2,n,20),itemx(n),data(nsamp,n),lc(n),
 cc     1          c(10,n),ca(ikr,10),ica(ikr),nni(ikr),aa(ikr),itemt(2,n),
 cxx     1           ca(ikr,jkr),ica(ikr),nni(ikr),aa(ikr),itemt(2,n)
 cxx      dimension ier(2)
-ccd      integer :: icon(n,20), ias1(2,n,20), jj, itemt(2,n), ii, itemx(n),
-      integer :: icon(n,2*ikn), ias1(2,n,ikn), itemt(2,n), itemx(n),
-     1           lk5, ca(ikr,jkr), ica(ikr), nni(ikr), n, data(nsamp,n), 
-     2           nsamp, ikr, jkr, ikn, lk77, ier(2)
-      real(8) :: aic, aa(ikr), postsamp, eps01
-c
-      integer :: lc(n)
-      real(8) :: aic1, daic
+ccd      integer icon(n,20), ias1(2,n,20), jj, itemt(2,n), ii, itemx(n),
+      integer icon(n,2*ikn), ias1(2,n,ikn), itemt(2,n), itemx(n), lk5,
+     1        ca(ikr,jkr), ica(ikr), nni(ikr), n, data(nsamp,n), nsamp,
+     2        ikr, jkr, ikn, lk77, ier(2)
+      double precision aic, aa(ikr), postsamp, eps01
+c local
+      integer lc(n)
+      double precision aic1, daic
 c
 cc     3          iw(nnn),w(1)
 cc      common ialim,imax,jalim,jmax,imaxx,jmaxx
@@ -3790,15 +3816,16 @@ cc      integer*2 ia,idf,lp,ly,ni,data,idt,idd,id1,icon,tc,tr
 cxx      integer data,tc,tr
 cxx      dimension idt(n),idd(n),id1(2),ia(ikf,2),idf(n),lp(2),ly(2,n),
 cxx     1          data(nsamp,n),icon(n,ikn),tc(ikf),tr(ikf),ier(2)
-      integer :: idf(n), l, ni, ly(2,n), lp(2), data(nsamp,n),
-ccd     1           icon(n,ikn), nsamp, n, ikf, ikn, ier(2)
-     1           icon(n,2*ikn), nsamp, n, ikf, ikn, ier(2)
-      real(8) :: ac, bc
-      integer :: idt(n), idd(n), id1(2), ia(ikf,2), tc(ikf), tr(ikf)
-      real(8) :: expo, t, t1, aaa, a, c
+      integer idf(n), l, ni, ly(2,n), lp(2), data(nsamp,n),
+ccd     1        icon(n,ikn), nsamp, n, ikf, ikn, ier(2)
+     1        icon(n,2*ikn), nsamp, n, ikf, ikn, ier(2)
+      double precision ac, bc
+c local
+      integer idt(n), idd(n), id1(2), ia(ikf,2), tc(ikf), tr(ikf)
+      double precision expo, t, t1, aaa, a, c
 c-----    modified for missing value handling by M.I.
-      integer :: ipmin
-      real(8) :: postsamp, aicmin
+      integer ipmin
+      double precision postsamp, aicmin
       data aicmin /1.d50/
 c-----
 c
@@ -3997,13 +4024,13 @@ cxx      integer data
 cxx      dimension lc(n),bic(n),ni(n),idf(n),ly(2,n),lp(2),ac(n),
 cc     1          icon(n,ikn),iw(nnn),data(nsamp,n)
 cxx     1          icon(n,ikn),data(nsamp,n),ier(2)
-ccd      integer :: k, idf(n), lc(n), data(nsamp,n), icon(n,ikn),
-      integer :: k, idf(n), lc(n), data(nsamp,n), icon(n,2*ikn),
-     1           ikn, n, nsamp, ier(2)
-      real(8) :: aicc, postsamp
-c
-      integer :: ni(n), ly(2,n), lp(2)
-      real(8) :: bic(n), ac(n)
+ccd      integer k, idf(n), lc(n), data(nsamp,n), icon(n,ikn),
+      integer k, idf(n), lc(n), data(nsamp,n), icon(n,2*ikn), ikn, n,
+     1        nsamp, ier(2)
+      double precision aicc, postsamp
+c local
+      integer ni(n), ly(2,n), lp(2)
+      double precision bic(n), ac(n)
 c
 cc      common ialim,imax,jalim,jmax,imaxx,jmaxx
 cc      i11=1+n
@@ -4089,14 +4116,14 @@ cxx      dimension a(n11,n33),a1(n11,n33),total(n33),totl(n33),tttr(n33),
 cxx     1          nd(n33),lc(n33),lcc(n33),lcy(10,n33),aa(n33),lj(10),
 cc     2          knn(n33),lb(n33),iw(1),w(1),totalc(n11)
 cxx     2          knn(n33),lb(n33),totalc(n11)
-      integer :: ii, total(n33), jx, lc(n33), lcc(n33), lcy(10,n33),
-     1           lj(10), knn(n33), kk5, kk2, n11, n33,
-     2           totalc(n11), mixk
-      real(8) :: a(n11,n33), a1(n11,n33), totl(n33), tttr(n33), aa(n33),
-     1           am, postsamp, eps01
-c
-      integer :: nd(n33), lb(n33), k, igd(k)
-      real(8) :: expo, al, samp, tsmp, tt, aaa, aic, aicmi, aicmm, daic
+      integer ii, total(n33), jx, lc(n33), lcc(n33), lcy(10,n33),
+     1        lj(10), knn(n33), kk5, kk2, n11, n33, totalc(n11), mixk
+      double precision a(n11,n33), a1(n11,n33), totl(n33), tttr(n33),
+     1                 aa(n33), am, postsamp, eps01
+c local
+      integer nd(n33), lb(n33), k, igd(k)
+      double precision expo, al, samp, tsmp, tt, aaa, aic, aicmi, aicmm,
+     1                 daic
 c
 cc      common ialim,imax,jalim,jmax,imaxx,jmaxx
 c
@@ -4178,6 +4205,9 @@ cm      if(kx.le.1) go to 40
       enddo
       jj = kx
       k1 = jj
+cadded 2022/01/30
+        k1b = k1
+c----------------
       aic = aa(1)
       aicmi = aic
       do j=1,k1
@@ -4186,7 +4216,7 @@ cm      if(kx.le.1) go to 40
       if(kx-mixk.le.1) go to 40
       if(igd(k) .eq. 1) go to 40
 c-----
-      aicmi=10.**10
+cm      aicmi=10.**10
       if(kx.eq.2) go to 50
 c-----    modified for missing value handling by M.I.
       kxmiss = kx
@@ -4220,6 +4250,9 @@ cxx      do 90 j4=1,j3
    90 continue
    91 continue
    92 continue
+cadded 2022/02/04
+      if (totl(1) .eq. samp) go to 59
+c-----
       tsmp=0.0
       do 111 j2=1,jj
       if(totl(j2).eq.0.) go to 111
@@ -4264,12 +4297,21 @@ ccxx      if(aicmi.lt.aic) go to 60
 
       iix=i-1
       aicmi=aic
+cadded 2022/02/04
+      k1b = k1
+c-------
       do 140 j=1,k1
       lb(j)=lcc(j)
   140 continue
+cadded 2022/02/04
+   59 continue
+c-----
    60 continue
 c
       aicmm=aa(km-1)
+cadded 2022/02/04
+      k1 = k1b
+c-------
       k2=k1
       if(lc(iix).le.3) go to 150
       do 160 j=1,k1
@@ -4384,13 +4426,13 @@ cc      integer*2 lc,lcc,lb,total,totalc
 cxx      integer total,totalc
 cxx      dimension a(n11,n33),a1(n11,n33),total(n33),totl(n33),lc(n33),
 cxx     1          lcc(n33),lb(n33),tttr(n33),totalc(n11)
-      integer :: lc(n33), iix, jj, total(n33), ii, k1, n11, n33,
-     1           totalc(n11)
-      real(8) :: a(n11,n33), aicmi, postsamp, eps01
-c
-      integer :: lcc(n33), lb(n33)
-      real(8) :: a1(n11,n33), totl(n33), tttr(n33), amin, tsmp, samp,
-     1           expo, tt, aaa, al, aic, daic, ac
+      integer lc(n33), iix, jj, total(n33), ii, k1, n11, n33,
+     1        totalc(n11)
+      double precision a(n11,n33), aicmi, postsamp, eps01
+c local
+      integer lcc(n33), lb(n33)
+      double precision a1(n11,n33), totl(n33), tttr(n33), amin, tsmp,
+     1                 samp, expo, tt, aaa, al, aic, daic, ac
 c
       amin=10.**10
 c <<<
@@ -4504,8 +4546,9 @@ cc      integer *2 caa,ca1,ca2,ca11,ca22
 cc      dimension caa(ikr,10),ca1(10),ca2(10)
 cxx      integer caa,ca1,ca2,ca11,ca22
 cxx      dimension caa(ikr,lk4),ca1(lk4),ca2(lk4)
-      integer :: caa(ikr,lk4), ikr, lk4, lk3, lk33, ijk
-      integer :: ca1(lk4), ca2(lk4), ca11, ca22
+      integer caa(ikr,lk4), ikr, lk4, lk3, lk33, ijk
+c local
+      integer ca1(lk4), ca2(lk4), ca11, ca22
 c
       ijk=0
       do 10 i=1,lk4

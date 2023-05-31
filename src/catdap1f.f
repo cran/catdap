@@ -1,8 +1,8 @@
-      SUBROUTINE CATDAP1F(NSAMP,N,L,RECODE,N1,ISKIP1,N4,ITEM1,ITEM2,
-     1                      ICONV,FACE,FACE2,ISKIP,IDATA,ITEM,IA,P,
-     2                      TOTALR,AIMIN,ORD)
+      SUBROUTINE CATDAP1(NSAMP,N,L,RECODE,N1,ISKIP1,N4,ITEM1,ITEM2,
+     1                   ICONV,FACE,FACE2,ISKIP,IDATA,ITEM,IA,P,TOTALR,
+     2                   AIMIN,ORD)
 C
-      INCLUDE 'catdap_f.h'
+      INCLUDE 'catdap.h'
 C
 cc      PROGRAM CATDAP
 C     CATEGORICAL DATA ANALYSIS PROGRAM PACKAGE 01  PART 1
@@ -252,18 +252,18 @@ cxx      DIMENSION ITEM1(N),ITEM2(N),ICONV(20,RECODE),FACE(L),
 cxx     1          FACE2(N1+1),ISKIP(20,ISKIP1),IDATA(N,NSAMP),ITEM(N),
 cxx     2          IA(N4,N4,L,N),TOTALR(N4,N),TOTALC(N4,L),P(N4,N4,L,N),
 cxx     3          TPAR(N4,N),PT(N4,L),AIMIN(L,N),ORD(L,N-1)
-      INTEGER :: NSAMP, N, L, N1, RECODE, ISKIP1, N4,
-     1              ITEM1(N), ITEM2(N), ICONV(20,RECODE), 
-     2              FACE(L), FACE2(N1+1), ISKIP(20,ISKIP1),
-     3              IDATA(N,NSAMP), ITEM(N), IA(N4,N4,L,N),
-     4              TOTALR(N4,N), ORD(L,N-1)
-      REAL(8) :: P(N4,N4,L,N), AIMIN(L,N)
+      INTEGER NSAMP, N, L, N1, RECODE, ISKIP1, N4, ITEM1(N), ITEM2(N),
+     1        ICONV(20,RECODE), FACE(L), FACE2(N1+1), ISKIP(20,ISKIP1),
+     2        IDATA(N,NSAMP), ITEM(N), IA(N4,N4,L,N), TOTALR(N4,N),
+     3        ORD(L,N-1)
+      DOUBLE PRECISION P(N4,N4,L,N), AIMIN(L,N)
 CXX      INTEGER     IDF1,MIN
 cxx      DIMENSION MIN(N),AMIN(N),IDF1(N),TCC(N4),AIC1(N),AIC2(N),AIC3(N)
-      INTEGER :: TOTALC(N4,L), MIN(N), IDF1(N)
-      REAL(8) :: AMIN(N), TCC(N4), AIC1(N), AIC2(N), AIC3(N),
-     1             TPAR(N4,N), PT(N4,L),
-     2             SA, AMINN, AMMIN, AS, PTT, TC
+c local
+      INTEGER TOTALC(N4,L), MIN(N), IDF1(N)
+      DOUBLE PRECISION AMIN(N), TCC(N4), AIC1(N), AIC2(N), AIC3(N),
+     1                 TPAR(N4,N), PT(N4,L), SA, AMINN, AMMIN, AS, PTT,
+     2                 TC
 c
 cc      DATA FM1/'(1H+',',60X',',12I','6,6X',4H,'TO,4HTAL',')'/,
 cc     1     FM2/', 1I',', 2I',', 3I',', 4I',', 5I',', 6I',', 7I',', 8I',

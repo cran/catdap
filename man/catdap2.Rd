@@ -9,7 +9,7 @@
 \usage{
 catdap2(data, pool = NULL, response.name, accuracy = NULL, nvar = NULL,
         additional.output = NULL, missingmark = NULL, pa1 = 1, pa2 = 4, pa3 = 10,
-        print.level = 0, plot = 1)
+        print.level = 0, plot = 1, gray.shade = FALSE)
 }
 \arguments{
   \item{data}{data matrix with variable names on the first row.}
@@ -38,13 +38,16 @@ catdap2(data, pool = NULL, response.name, accuracy = NULL, nvar = NULL,
     explanatory variables (k=1,2,...)" are printed. A value of '\code{1}' means
     that those lists are not printed and "Summary of subsets of explanatory
     variables" within the top 30 is listed.}
-  \item{plot}{split directions for each level of the mosaic:
+  \item{plot}{split directions of the mosaic plot for single explanatory models
+    and minimum AIC model:
     \describe{
       \item{0 :}{no plot,}
       \item{1 :}{horizontal (default),}
       \item{2 :}{alternating directions, beginning with a vertical split.}
     }
   }
+  \item{gray.shade}{A logical value indicating whether the gamma-corrected grey
+    palette should be used. If \code{FALSE} (default), any color palette is used.} 
 }
 \details{
   This function is an R-function style clone of Sakamoto's CATDAP-02 program
@@ -59,14 +62,14 @@ catdap2(data, pool = NULL, response.name, accuracy = NULL, nvar = NULL,
 
   \eqn{E} denotes the response variable and \eqn{F} denotes candidate
   explanatory variable, and their cell frequencies by
-  \eqn{n_E(i) (i\in(E))}{n_E(i) (i in (E))} and
-  \eqn{n_F(j) (j\in(F))}{n_F(j) (j in (F))}. The cross frequency is denoted by
-  \eqn{n_F,F(i,j)}{n_F,F(i,j)} \eqn{(i,j\in(E,F))}{(i,j in (E,F))}. To measure
+  \eqn{n_E(i) (i \in E)}{n_E(i) (i in E)} and
+  \eqn{n_F(j) (j \in F)}{n_F(j) (j in F)}. The cross frequency is denoted by
+  \eqn{n_{E,F}(i,j)} \eqn{(i \in E, j \in F)}{(i in E, j in E)}. To measure
   the strength of dependence of a specific set of response variables \eqn{E} on
   the explanatory variable \eqn{F}, we use the following statistic:
 
-  \deqn{AIC(E;F) = -2\sum_{i,j\in(E,F)} n_E,F(i,j)\ ln\{n_E,F(i,j)/(n_F(j)\} + 2(C_E-1)C_F,\ \ (1)}{%
-        AIC(E;F) = -2 \sum _{i,j in (E,F)} n_E,F(i,j) ln{n_E,F(i,j)/(n_F(j)} + 2(C_E-1)C_F,  (1)}
+  \deqn{AIC(E;F) = -2\sum_{i \in E, j \in F} n_{E,F}(i,j)\ \ln\{n_{E,F}(i,j)/n_F(j)\} + 2C_F(C_E-1),\ \ (1)}{%
+        AIC(E;F) = -2 \sum _{i in E, j in E} n_{E,F} (i,j) ln{n_{E,F} (i,j) / (n_F (j)} + 2C_F(C_E - 1),  (1)}
 
   where \eqn{C_E} and \eqn{C_F} denote the total number of categories of the
   corresponding sets of variables, respectively.
@@ -76,8 +79,8 @@ catdap2(data, pool = NULL, response.name, accuracy = NULL, nvar = NULL,
 
   In case of \eqn{F=\phi}, the formula (1) reduces to
 
-    \deqn{AIC(E;\phi) = -2\sum_{i\in(E)} n_E(i)\ ln\{n_E(i)/n\} + 2(C_E-1).}{%
-          AIC(E;\phi) = -2 \sum _{i in (E)} n_E(i) ln{n_E(i)/n} + 2(C_E-1).}
+    \deqn{AIC(E;\phi) = -2\sum_{i \in E} n_E(i)\ \ln\{n_E(i)/n\} + 2(C_E-1).}{%
+          AIC(E;\phi) = -2 \sum _{i in E} n_E (i) ln{n_E (i) / n} + 2(C_E - 1).}
 
   Here it is assumed that \eqn{C_\phi=1} and \eqn{n_\phi(1)=n}.
 
@@ -148,11 +151,18 @@ catdap2(data, pool = NULL, response.name, accuracy = NULL, nvar = NULL,
       \item{vname:}{explanatory variable names.}
     }
   }
-  \item{ctable}{contingency table constructed by the best subset and additional
-    subsets if any variables is specified by \code{additional.output}.}
-  \item{ctable.interval}{class interval for continuous and discrete explanatory
-    variables in contingency table.}
-  \item{caic}{AIC of subset of explanatory variables in contingency table.}
+  \item{ctable}{list of contingency table constructed by the best subset and additional
+    subsets if any variables is specified by \code{additional.output} with the following components:
+
+    \describe{
+      \item{aic:}{AIC of subset of explanatory variables,}
+      \item{exvar:}{explanatory variables,}
+      \item{nrange:}{number of intervals,}
+      \item{range:}{class interval for continuous and discrete explanatory,}
+      \item{n:}{contingency table values,}
+      \item{p:}{ratio vales.}
+    }
+  }
   \item{missing}{number of types of the missing values for each variable.}
 }
 \references{
@@ -190,9 +200,8 @@ resvar <- "Petal.Width"
 z <- catdap2(iris, c(0, 0, 0, -7, 2), resvar, c(0.1, 0.1, 0.1, 0.1, 0))
 z
 
-vname <- names(iris)
 exvar <- c("Sepal.Length", "Petal.Length")
-Barplot2WayTable(vname, resvar, exvar, z$tway.table, z$interval)
+Barplot2WayTable(z, exvar)
 
 # Example 3  (in the case of a large number of variables)
 data(HelloGoodbye)

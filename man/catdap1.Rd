@@ -8,8 +8,8 @@
   association between all the possible pairs of categorical variables. 
 }
 \usage{
-catdap1(cdata, response.names = NULL, plot = 1, ask = TRUE)
-catdap1c(ctable, response.names = NULL, plot = 1, ask = TRUE)
+catdap1(cdata, response.names = NULL, plot = 1, gray.shade = FALSE, ask = TRUE)
+catdap1c(ctable, response.names = NULL, plot = 1, gray.shade = FALSE, ask = TRUE)
 }
 \arguments{
   \item{cdata}{categorical data matrix with variable names on the first row.}
@@ -23,8 +23,10 @@ catdap1c(ctable, response.names = NULL, plot = 1, ask = TRUE)
       \item{2 :}{alternating directions, beginning with a vertical split.}
     }
   }
+  \item{gray.shade}{A logical value indicating whether the gamma-corrected grey
+    palette should be used. If \code{FALSE} (default), any color palette is used.} 
   \item{ask}{logical; if \code{TRUE} (default), the user is asked to confirm
-    before a new page is started. if \code{FALSE}, each new plot create a new
+    before a new page is started. If \code{FALSE}, each new plot create a new
     page.} 
 }
 \details{
